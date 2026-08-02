@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kok Bisa? Studio AI</title>
+    
+    <!-- Memuat Tailwind CSS melalui CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Memuat Google Fonts (Inter) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Memuat Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Kustomisasi scrollbar ringan */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 flex flex-col overflow-hidden">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none">
+        <i id="toast-icon" data-lucide="check-circle-2" class="w-4 h-4"></i>
+        <span id="toast-message">Pesan</span>
+    </div>
+
+    <!-- Confirmation Modal for Reset Session -->
+    <div id="reset-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl border border-slate-200">
+            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-1">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-900 text-base">Reset Sesi Kerja?</h3>
+                <p class="text-xs text-slate-500 mt-1">Seluruh progres naskah, topik, dan prompt yang belum disalin akan di-reset ke awal.</p>
+            </div>
+            <div class="flex items-center space-x-2 pt-2">
+                <button id="btn-cancel-reset" class="flex-1 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                    Batal
+                </button>
+                <button id="btn-confirm-reset" class="flex-1 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition">
+                    Ya, Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center max-w-sm w-full space-y-4">
+            <div class="w-12 h-12 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
+            <div class="text-center">
+                <h3 class="font-bold text-slate-900 text-sm mb-1">AI Sedang Bekerja...</h3>
+                <p id="loading-text" class="text-xs text-slate-500 font-medium">Memuat...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Top Header Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 lg:px-6 py-3 flex items-center justify-between shadow-sm">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                <i data-lucide="sparkles" class="w-5 h-5 animate-pulse"></i>
+            </div>
+            <div>
+                <div class="flex items-center space-x-2">
+                    <h1 class="font-bold text-slate-900 text-base sm:text-lg tracking-tight">Kok Bisa? Studio AI</h1>
+                    <span class="bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 flex items-center space-x-1">
+                        <i data-lucide="globe" class="w-3 h-3"></i>
+                        <span>Google Search Live</span>
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 hidden sm:block">AI Workflow Generator Naskah Narasi Edukasi Mengalir</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="btn-show-reset" class="flex items-center space-x-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition border border-red-200">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span class="hidden sm:inline">Reset Sesi & Mulai Baru</span>
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-1 overflow-hidden h-full">
+        
+        <!-- Sidebar -->
+        <aside class="w-60 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col justify-between hidden md:flex h-full">
+            <div class="p-4 space-y-1">
+                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Navigasi Studio</div>
+                
+                <button id="tab-btn-editor" class="nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition bg-blue-50 text-blue-700 font-semibold" data-target="editor">
+                    <i data-lucide="zap" class="w-4 h-4 text-blue-600"></i>
+                    <span>Workflow Editor</span>
+                </button>
+
+                <button id="tab-btn-settings" class="nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 hover:bg-slate-100" data-target="settings">
+                    <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i>
+                    <span>Pengaturan API</span>
+                </button>
+            </div>
+
+            <div class="p-4 border-t border-slate-100 bg-slate-50/50">
+                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
+                    <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Status Sesi Saat Ini</span>
+                    <p id="sidebar-topic-title" class="text-xs font-semibold text-slate-800 line-clamp-1">Topik Belum Dipilih</p>
+                    <p id="sidebar-step-info" class="text-[11px] text-slate-500">Step 1 dari 6</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Pane -->
+        <main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 h-full relative">
+            
+            <!-- TAB 1: WORKFLOW EDITOR -->
+            <div id="view-editor" class="max-w-5xl mx-auto space-y-6 block">
+                
+                <!-- Stepper Header -->
+                <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+                    <div id="stepper-container" class="flex items-center justify-between min-w-[650px] px-2">
+                        <!-- Stepper items di-generate via JS -->
+                    </div>
+                </div>
+
+                <!-- STEP 1: Topik & Tren -->
+                <div id="step-1" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 block">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 1 dari 6</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-xs text-slate-500">Format Konten & Pencarian Tren</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 mt-1">Setup Format & Topic Discovery</h2>
+                            <p class="text-sm text-slate-500">Pilih format rasio konten terlebih dahulu, lalu cari ide topik yang sedang tren di Google.</p>
+                        </div>
+                    </div>
+
+                    <!-- Format Selector -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">1. Pilih Format Konten & Rasio</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <button id="btn-format-16-9" type="button" class="format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm">
+                                <div class="w-9 h-6 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[9px] mt-0.5 border-blue-600 bg-blue-100 text-blue-700">16:9</div>
+                                <div>
+                                    <div class="flex items-center space-x-2"><span class="font-bold text-slate-900 text-xs">📹 Long-form Video (16:9 Widescreen)</span></div>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">YouTube Reguler, Dokumenter & Animasi Lanskap (Durasi 8 - 15+ menit).</p>
+                                </div>
+                            </button>
+
+                            <button id="btn-format-9-16" type="button" class="format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition bg-slate-50 border-slate-200 hover:bg-white">
+                                <div class="w-5 h-8 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[8px] border-slate-400 text-slate-500">9:16</div>
+                                <div>
+                                    <div class="flex items-center space-x-2"><span class="font-bold text-slate-900 text-xs">📱 Short-form Content (9:16 Portrait)</span></div>
+                                    <p class="text-[11px] text-slate-500 mt-0.5">YouTube Shorts, TikTok, Instagram Reels (Durasi singkat 30 - 60 detik).</p>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manual Title & Filters -->
+                    <div class="space-y-4 pt-2">
+                        <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">2. Cari atau Tentukan Topik Konten</label>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Judul / Topik Pilihan Sendiri (Opsional)</label>
+                            <input id="input-title" type="text" placeholder="Ketik topik Anda sendiri atau klik pencarian tren..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori Edukasi</label>
+                                <select id="select-category" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800">
+                                    <option value="Fakta Unik & Anomali Dunia">💡 Fakta Unik & Anomali Dunia</option>
+                                    <option value="Kisah Misteri & Konspirasi Sains">🔍 Kisah Misteri & Konspirasi Sains</option>
+                                    <option value="Sudut Pandang POV & Simulasi">👀 Sudut Pandang POV & Simulasi</option>
+                                    <option value="Luar Angkasa & Astronomi">🌌 Luar Angkasa & Astronomi</option>
+                                    <option value="Sains & Fisika">🔬 Sains & Fisika</option>
+                                    <option value="Tubuh Manusia & Biologi">🧬 Tubuh Manusia & Biologi</option>
+                                    <option value="Sejarah & Peradaban">📜 Sejarah & Peradaban</option>
+                                    <option value="Teknologi & AI">🤖 Teknologi, AI & Masa Depan</option>
+                                    <option value="Psikologi & Perilaku">🧠 Psikologi & Perilaku Manusia</option>
+                                    <option value="Pop Culture & Mitos vs Fakta">🎬 Pop Culture & Mitos vs Fakta</option>
+                                    <option value="Geografi & Fenomena Alam Ekstrem">🌍 Geografi & Fenomena Alam Ekstrem</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Sudut Pandang Ide</label>
+                                <select id="select-mode" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <option value="Sedang Viral (Trending Google)">🔥 Sedang Viral (Trending Google)</option>
+                                    <option value="Mind-Blowing & Eksistensial">🤯 Mind-Blowing & Eksistensial</option>
+                                    <option value="Pengandaian (What If)">❓ Pengandaian (What If)</option>
+                                    <option value="Perspektif Orang Pertama (POV)">👁️ Perspektif Orang Pertama (POV)</option>
+                                    <option value="Penemuan & Misteri Terkini">🗝️ Penemuan & Misteri Terkini</option>
+                                </select>
+                            </div>
+                            <div class="flex items-end">
+                                <button id="btn-generate-topics" class="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs py-2.5 px-4 rounded-xl shadow-md transition">
+                                    <i data-lucide="globe" class="w-4 h-4"></i>
+                                    <span>Cari Tren Google</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grounding Sources -->
+                    <div id="grounding-sources-container" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                        <div class="flex items-center space-x-1.5 text-slate-700 font-semibold">
+                            <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-600"></i>
+                            <span>Sumber Pencarian Web Google:</span>
+                        </div>
+                        <div id="grounding-sources-list" class="flex flex-wrap gap-2 pt-1"></div>
+                    </div>
+
+                    <!-- Topic Search Results Grid -->
+                    <div class="space-y-3 pt-2">
+                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i>
+                            <span id="topics-count-label">Rekomendasi Topik Trending (0)</span>
+                        </h3>
+                        <div id="topics-grid-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Injected via JS -->
+                            <div class="col-span-1 md:col-span-2 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <i data-lucide="search" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                                <p class="text-xs font-medium text-slate-600">Belum ada topik yang ditemukan.</p>
+                                <p class="text-[11px] text-slate-400 mt-0.5">Klik "Cari Tren Google" di atas atau ketik judul Anda secara langsung.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4 border-t border-slate-100">
+                        <button onclick="setStep(2)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
+                            <span>Lanjut ke Step 2 (Naskah)</span>
+                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 2: Script -->
+                <div id="step-2" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 2 dari 6</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-xs text-slate-500">Naskah Narasi Alami</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 mt-1">Continuous Script Storytelling</h2>
+                            <p class="text-sm text-slate-500">Naskah cerita mengalir lurus secara alami tanpa potongan judul bab rigid.</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/60 border border-blue-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Topik Terpilih (<span id="lbl-script-category"></span>)</span>
+                            <h3 id="lbl-script-topic" class="font-bold text-slate-900 text-base">Belum ada topik terpilih</h3>
+                        </div>
+                        <button id="btn-generate-script" class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition whitespace-nowrap self-start md:self-auto">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>Generate Naskah Narasi</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-semibold text-slate-700">Target Durasi Video</label>
+                            </div>
+                            <div class="space-y-2">
+                                <input id="input-duration" type="text" placeholder="Ketik durasi..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800" />
+                                <div id="duration-presets" class="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                    <!-- Injected via JS -->
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Instruksi Cerita Khusus</label>
+                            <input id="input-custom-instruction" type="text" placeholder="Contoh: Fokuskan pada analogi santai..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white outline-none" />
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3 text-xs text-slate-500 font-medium">
+                                <span>Jumlah Kata: <strong id="lbl-word-count" class="text-slate-800">0</strong></span>
+                                <span>•</span>
+                                <span>Estimasi Durasi: <strong id="lbl-est-duration" class="text-slate-800">0 Menit</strong></span>
+                            </div>
+                            <div class="flex items-center space-x-1.5">
+                                <button id="btn-script-expand" class="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition">+ Perluas</button>
+                                <button id="btn-script-shorten" class="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition">- Ringkas</button>
+                                <button id="btn-script-copy" class="text-[11px] font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg transition flex items-center space-x-1">
+                                    <i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span>
+                                </button>
+                            </div>
+                        </div>
+                        <textarea id="textarea-script" rows="16" placeholder="Naskah cerita narasi yang mengalir lurus akan muncul di sini..." class="w-full text-xs font-sans bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed text-slate-800"></textarea>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                        <button onclick="setStep(1)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
+                        <button onclick="setStep(3)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
+                            <span>Lanjut ke Step 3 (Visual)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 3: Visual Prompts -->
+                <div id="step-3" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 3 dari 6</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-xs text-slate-500">Image Generation Prompts</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 mt-1">Visual Prompts per Scene</h2>
+                            <p class="text-sm text-slate-500">Pilih gaya visual adegan di bawah ini, lalu AI akan menyusun prompt untuk Imagen/Midjourney.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                                <i data-lucide="palette" class="w-4 h-4 text-amber-600"></i>
+                                <span>Pilih Gaya Visual / Art Style</span>
+                            </label>
+                            <button id="btn-sync-prompts" class="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center space-x-1">
+                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Sinkronkan Scene</span>
+                            </button>
+                        </div>
+                        <div id="visual-styles-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
+                                <i data-lucide="layout-template" class="w-4 h-4 text-slate-400"></i>
+                                <span id="lbl-prompts-count">Daftar Scene Prompts (0)</span>
+                            </h3>
+                            <button id="btn-copy-all-prompts" class="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">Salin Semua</button>
+                        </div>
+                        <div id="visual-prompts-container" class="space-y-4">
+                            <!-- Injected via JS -->
+                            <div class="text-center py-8"><p class="text-xs text-slate-500">Belum ada naskah. Silakan generate naskah di Step 2.</p></div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                        <button onclick="setStep(2)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
+                        <button onclick="setStep(4)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
+                            <span>Lanjut ke Step 4 (Video)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 4: Video Prompts -->
+                <div id="step-4" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 4 dari 6</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-xs text-slate-500">Video Generation Prompts</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 mt-1">Image-to-Video Motion Prompts</h2>
+                            <p class="text-sm text-slate-500">Digunakan untuk alat AI seperti Runway Gen-2 atau Luma Dream Machine.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-semibold text-slate-700">Instruksi Kamera / Pergerakan Umum</label>
+                        <input id="input-anim-style" type="text" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800" />
+                    </div>
+
+                    <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
+                                <i data-lucide="film" class="w-4 h-4 text-slate-400"></i>
+                                <span id="lbl-video-prompts-count">Daftar Video Motion Prompts (0)</span>
+                            </h3>
+                            <button id="btn-copy-all-video-prompts" class="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">Salin Semua</button>
+                        </div>
+                        <div id="video-prompts-container" class="space-y-4">
+                            <!-- Injected via JS -->
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                        <button onclick="setStep(3)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
+                        <button onclick="setStep(5)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
+                            <span>Lanjut ke Step 5 (Thumbnail)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 5: Thumbnail -->
+                <div id="step-5" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 5 dari 6</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-xs text-slate-500">Thumbnail & Cover</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 mt-1">Cover & Thumbnail Studio</h2>
+                            <p class="text-sm text-slate-500">Siapkan prompt khusus untuk cover depan yang memancing klik.</p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col items-center text-center space-y-2">
+                            <i data-lucide="image" class="w-8 h-8 text-blue-500"></i>
+                            <div>
+                                <h4 class="text-sm font-bold text-blue-900">Thumbnail / Cover Prompt Generator</h4>
+                                <p class="text-xs text-blue-700 mt-1">Prompt ini dioptimalkan dengan tipografi besar dan kontras tinggi.</p>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-700 mb-1">Teks Utama pada Gambar</label>
+                            <input id="input-cover-text" type="text" placeholder="Contoh: RAHASIA TERSEMBUNYI!" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white outline-none font-medium" />
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-semibold text-slate-700">Prompt Gambar Cover Final</label>
+                                <button id="btn-copy-cover-prompt" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1">
+                                    <i data-lucide="copy" class="w-3 h-3"></i><span>Salin Prompt</span>
+                                </button>
+                            </div>
+                            <textarea id="textarea-cover-prompt" class="w-full text-xs font-mono bg-slate-900 text-purple-400 border border-slate-800 rounded-xl p-4 focus:ring-1 focus:ring-purple-500 outline-none leading-relaxed min-h-[120px]"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
+                        <button onclick="setStep(4)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
+                        <button onclick="setStep(6)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
+                            <span>Lanjut ke Step 6 (SEO)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- STEP 6: SEO -->
+                <div id="step-6" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1"></i> Step 6 dari 6</span>
+                                <span class="text-slate-300">•</span>
+                                <span class="text-xs text-slate-500">YouTube SEO & Publishing</span>
+                            </div>
+                            <h2 class="text-xl font-bold text-slate-900 mt-1">SEO & Metadata Siap Upload</h2>
+                        </div>
+                    </div>
+
+                    <div class="space-y-5">
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                                    <i data-lucide="tag" class="w-4 h-4 text-slate-400"></i><span>Opsi Judul Video Menarik</span>
+                                </label>
+                                <button id="btn-copy-titles" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin Semua</span></button>
+                            </div>
+                            <div id="seo-titles-container" class="bg-slate-50 rounded-xl border border-slate-200 p-3 space-y-2">
+                                <!-- Injected via JS -->
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                                    <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i><span>Deskripsi Video YouTube</span>
+                                </label>
+                                <button id="btn-copy-desc" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
+                            </div>
+                            <textarea id="textarea-seo-desc" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none min-h-[120px]"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">Tag & Keywords</label>
+                                    <button id="btn-copy-tags" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
+                                </div>
+                                <textarea id="textarea-seo-tags" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none" rows="3"></textarea>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">Komentar Pin</label>
+                                    <button id="btn-copy-pin" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
+                                </div>
+                                <textarea id="textarea-seo-pin" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center pt-6 border-t border-slate-100">
+                        <button onclick="setStep(5)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
+                        <button onclick="handleCreateNewProject()" class="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-6 py-3 rounded-xl transition shadow-lg shadow-emerald-500/30">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i><span>Selesai! Mulai Proyek Baru</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: API SETTINGS -->
+            <div id="view-settings" class="max-w-2xl mx-auto hidden">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
+                        <div>
+                            <h2 class="text-xl font-bold text-slate-900">Pengaturan API Keys</h2>
+                            <p class="text-sm text-slate-500 mt-1">Konfigurasi kunci akses API Anda untuk menggunakan generator AI.</p>
+                        </div>
+                        <i data-lucide="shield-check" class="w-8 h-8 text-emerald-500"></i>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-1">Google Gemini API Key</label>
+                            <input id="input-api-key" type="password" placeholder="Masukkan Gemini API Key Anda..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
+                            <p class="text-[11px] text-slate-500 mt-2">Dibutuhkan untuk mencari topik dan menulis naskah. Dapatkan dari <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" class="text-blue-600 hover:underline">Google AI Studio</a>.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // Constants
+        const DEFAULT_GEMINI_KEY = "";
+        
+        const VISUAL_STYLES = [
+            { id: 'realistic', label: 'Realistik Fotografi', icon: '📷', promptPrefix: 'Realistic Photographic, ultra detailed studio photography, photorealistic, dramatic natural lighting, 8k resolution' },
+            { id: 'flat_vector', label: 'Modern Flat Vector', icon: '🎨', promptPrefix: 'Modern Educational Animation, Flat Illustration, Clean Vector Art, Kok Bisa Style, vibrant palette' },
+            { id: 'pixar_3d', label: '3D Animation (Pixar)', icon: '✨', promptPrefix: '3D Character Animation, Pixar Visual Style, Expressive 3D render, Vibrant Cinema 4D Lighting' },
+            { id: 'anime', label: 'Anime Manga Keyframe', icon: '🌸', promptPrefix: 'Anime Keyframe Art, Japanese Animation Style, Makoto Shinkai aesthetic, vivid cell shading, dramatic anime lighting' },
+            { id: 'sketch', label: 'Cinematic Sketch', icon: '✏️', promptPrefix: 'Cinematic Concept Sketch, Hand-drawn Storyboard Art, Pencil & Ink Line Art, Expressive Hatching, Graphic Concept' },
+            { id: 'retro_comic', label: 'Retro Comic Book', icon: '📚', promptPrefix: 'Retro Comic Book Style, Halftone Dots, Vintage Color Palette, Classic Pop Art Graphic Novel' },
+            { id: 'watercolor', label: 'Watercolor Concept', icon: '🖌️', promptPrefix: 'Watercolor Concept Art, Artistic Brush Strokes, Soft Pastel Color Palette, Storybook Painting, Fluid Inks' },
+            { id: 'cinematic_film', label: 'Cinematic Film', icon: '🎬', promptPrefix: 'Cinematic Film Stills, 35mm Movie Shot, Dynamic Atmospheric Lighting, Moody Composition, Anamorphic Lens' }
+        ];
+
+        const CREATE_EMPTY_PROJECT = () => ({
+            id: `session-${Date.now()}`,
+            title: "Topik Edukasi Baru",
+            format: "16:9",
+            category: "Fakta Unik & Anomali Dunia",
+            mode: "Sedang Viral (Trending Google)",
+            currentStep: 1,
+            step1Data: { selectedTopic: "", selectedReason: "", topics: [] },
+            step2Data: { targetDuration: "10-15 Menit", customInstruction: "", wordCount: 0, estimatedDuration: "0 Menit", script: "" },
+            step3Data: { selectedStyleId: "flat_vector", visualStyle: VISUAL_STYLES[1].promptPrefix, prompts: [] },
+            step4Data: { animationStyle: "Animasi lambat, transisi mulus, pergerakan kamera sinematik", videoPrompts: [] },
+            step5Data: { selectedTextOption: "", readyPrompt: "" },
+            step6Data: { seoTitles: [], videoDescription: "", seoKeywords: "", pinnedComment: "" }
+        });
+
+        // Global State
+        let project = CREATE_EMPTY_PROJECT();
+        let activeTab = 'editor';
+        let apiKey = DEFAULT_GEMINI_KEY;
+        let groundingSources = [];
+        let imagePreviews = {};
+        let loadingImageId = null;
+
+        // UI Helpers
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toast-icon');
+            const msg = document.getElementById('toast-message');
+            
+            toast.className = 'fixed bottom-5 right-5 z-50 flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transform transition-all duration-300';
+            msg.textContent = message;
+
+            if (type === 'success') {
+                toast.classList.add('bg-emerald-900', 'text-emerald-100', 'border-emerald-700');
+                icon.setAttribute('data-lucide', 'check-circle-2');
+                icon.classList.add('text-emerald-400');
+            } else if (type === 'error') {
+                toast.classList.add('bg-red-900', 'text-red-100', 'border-red-700');
+                icon.setAttribute('data-lucide', 'alert-circle');
+                icon.classList.add('text-amber-400');
+            } else {
+                toast.classList.add('bg-slate-900', 'text-white', 'border-slate-700');
+                icon.setAttribute('data-lucide', 'info');
+                icon.classList.add('text-blue-400');
+            }
+            lucide.createIcons();
+            
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    toast.classList.remove('bg-emerald-900', 'text-emerald-100', 'border-emerald-700', 'bg-red-900', 'text-red-100', 'border-red-700', 'bg-slate-900', 'text-white', 'border-slate-700');
+                }, 300);
+            }, 3500);
+        }
+
+        async function copyToClipboard(text, label = "Teks") {
+            if (!text) {
+                showToast("Tidak ada teks untuk disalin", "error");
+                return;
+            }
+            try {
+                await navigator.clipboard.writeText(text);
+                showToast(`${label} berhasil disalin!`, "success");
+            } catch (err) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";
+                textArea.style.left = "-999999px";
+                document.body.appendChild(textArea);
+                textArea.select();
+                const success = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                if (success) showToast(`${label} berhasil disalin!`, "success");
+                else showToast(`Gagal menyalin ${label}.`, "error");
+            }
+        }
+
+        function setLoading(isLoading, text = "") {
+            const overlay = document.getElementById('loading-overlay');
+            document.getElementById('loading-text').textContent = text;
+            if (isLoading) overlay.classList.remove('hidden');
+            else overlay.classList.add('hidden');
+        }
+
+        function parseScriptToVisualPrompts(scriptText, visualStyle, aspectFormat) {
+            if (!scriptText || scriptText.trim().length === 0) return [];
+            const paragraphs = scriptText.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 25);
+            if (paragraphs.length === 0) return [];
+
+            const maxScenes = aspectFormat === "9:16" ? 6 : 8;
+            const groupSize = Math.max(1, Math.ceil(paragraphs.length / maxScenes));
+            const scenes = [];
+            const ratioDesc = aspectFormat === "9:16" ? "9:16 vertical mobile aspect ratio, vertical portrait composition" : "16:9 widescreen landscape ratio";
+
+            for (let i = 0; i < paragraphs.length; i += groupSize) {
+                const chunk = paragraphs.slice(i, i + groupSize).join(" ");
+                const sceneIndex = scenes.length + 1;
+                scenes.push({
+                    id: `img-${sceneIndex}`,
+                    sceneNum: String(sceneIndex).padStart(3, '0'),
+                    context: `Adegan ${sceneIndex}: ${chunk.substring(0, 110)}...`,
+                    prompt: `${visualStyle}. Scene ${sceneIndex} representation: ${chunk.substring(0, 140)}. Vivid color composition, ${ratioDesc}.`
+                });
+            }
+            return scenes;
+        }
+
+        function parseScriptToSEO(scriptText, topicTitle) {
+            const cleanTitle = topicTitle && topicTitle.trim() !== "" ? topicTitle : "Topik Edukasi Sains";
+            return {
+                seoTitles: [
+                    `${cleanTitle} (Penjelasan Lengkap & Alur Cerita)`,
+                    `Sains Di Balik ${cleanTitle}: Rahasia Yang Jarang Orang Tahu`,
+                    `Bagaimana Proses ${cleanTitle}? (Kisah Narasi Edukasi)`,
+                    `Kisah Menakjubkan: ${cleanTitle}`,
+                    `Apa Yang Sebenarnya Terjadi Pada ${cleanTitle}?`
+                ],
+                videoDescription: `Pernahkah kamu penasaran bagaimana fenomena di balik ${cleanTitle}?\n\nDalam video animasi edukasi kali ini, kita akan menyusuri alur cerita naratif alami mulai dari fakta sejarah, rahasia sains, hingga refleksi mendalam!\n\nJangan lupa Like, Subscribe, dan share video edukasi ini!`,
+                seoKeywords: `${cleanTitle.toLowerCase()}, sains indonesia, edukasi animasi, cerita sains, kok bisa, alur cerita narasi`,
+                pinnedComment: `Bagian alur cerita mana dari ${cleanTitle} yang paling berkesan buat kamu? Tulis di kolom komentar ya! 👇`
+            };
+        }
+
+        function syncAllStepsWithScript() {
+            const format = project.format;
+            const script = project.step2Data.script;
+            const title = project.title;
+            const style = project.step3Data.visualStyle;
+
+            project.step3Data.prompts = parseScriptToVisualPrompts(script, style, format);
+            
+            const motionStyle = format === "9:16" 
+                ? "Vertical dynamic camera tilt and slow vertical pan. Smooth mobile-optimized 2D animation"
+                : "Slow horizontal camera movement. Cinematic smooth 2D widescreen vector animation";
+
+            project.step4Data.videoPrompts = project.step3Data.prompts.map(vp => ({
+                id: `vid-${vp.id}`,
+                sceneNum: vp.sceneNum,
+                prompt: `${motionStyle} of: ${vp.context}. High resolution, 60fps style, ${format} orientation.`
+            }));
+
+            const seo = parseScriptToSEO(script, title);
+            project.step6Data = { ...project.step6Data, ...seo };
+
+            const selectedText = project.step5Data.selectedTextOption || title || "Judul Thumbnail Menarik";
+            project.step5Data.readyPrompt = format === "9:16" 
+                ? `A high-quality 9:16 vertical cover frame for YouTube Shorts in ${style} visual style. [TOPIC]: ${title}. [MAIN CHARACTER]: Expressive focus. [TYPOGRAPHY]: Large bold vertical stacked text '${selectedText}'. High contrast, 9:16 ratio.`
+                : `A high-quality 16:9 widescreen YouTube thumbnail in ${style} visual style. [TOPIC]: ${title}. [MAIN CHARACTER]: Expression of wonder. [TYPOGRAPHY]: Large clear headline text '${selectedText}'. High contrast, 16:9 ratio.`;
+            
+            renderAllSteps();
+        }
+
+        async function callGeminiAPI(prompt, systemInstruction, useSearch = false) {
+            const keyToUse = apiKey.trim() || DEFAULT_GEMINI_KEY;
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${keyToUse}`;
+            
+            const reqBody = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            if (systemInstruction) reqBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+            if (useSearch) reqBody.tools = [{ googleSearch: {} }];
+
+            const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reqBody) });
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error?.message || `API Error: ${res.status}`);
+            }
+            
+            const data = await res.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            let sources = [];
+            const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks;
+            if (chunks) sources = chunks.filter(c => c.web).map(c => ({ title: c.web.title || c.web.uri, uri: c.web.uri }));
+            return { text, sources };
+        }
+
+        async function generateImagePreview(prompt, formatStr) {
+            const keyToUse = apiKey.trim() || DEFAULT_GEMINI_KEY;
+            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${keyToUse}`;
+            const payload = { instances: [{ prompt }], parameters: { sampleCount: 1, aspectRatio: formatStr } };
+            
+            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error("Gagal memperoleh gambar dari API");
+            
+            const result = await res.json();
+            if (result.predictions?.[0]?.bytesBase64Encoded) {
+                return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+            }
+            throw new Error("Format gambar tidak valid.");
+        }
+
+        function updateNavigation() {
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+                if (btn.dataset.target === activeTab) {
+                    btn.className = 'nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition bg-blue-50 text-blue-700 font-semibold';
+                    btn.querySelector('i').className = 'w-4 h-4 text-blue-600';
+                } else {
+                    btn.className = 'nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 hover:bg-slate-100';
+                    btn.querySelector('i').className = 'w-4 h-4 text-slate-500';
+                }
+            });
+            document.getElementById('view-editor').style.display = activeTab === 'editor' ? 'block' : 'none';
+            document.getElementById('view-settings').style.display = activeTab === 'settings' ? 'block' : 'none';
+            lucide.createIcons();
+        }
+
+        function setStep(step) {
+            project.currentStep = step;
+            document.querySelectorAll('.step-view').forEach((el, idx) => {
+                el.style.display = (idx + 1 === step) ? 'block' : 'none';
+            });
+            renderStepper();
+            document.getElementById('sidebar-step-info').textContent = `Step ${step} dari 6`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function renderStepper() {
+            const steps = [
+                { num: 1, label: 'Tren Google', icon: 'search' },
+                { num: 2, label: 'Naskah Narasi', icon: 'file-text' },
+                { num: 3, label: 'Visual Prompts', icon: 'image' },
+                { num: 4, label: 'Video Motion', icon: 'video' },
+                { num: 5, label: 'Thumbnail Studio', icon: 'image' },
+                { num: 6, label: 'YouTube SEO', icon: 'tag' },
+            ];
+            const container = document.getElementById('stepper-container');
+            container.innerHTML = steps.map((s, idx) => {
+                const isActive = project.currentStep === s.num;
+                const isPassed = project.currentStep > s.num;
+                
+                let btnClass = isActive ? 'bg-blue-600 text-white font-semibold shadow-sm' : 
+                               isPassed ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium' : 
+                               'text-slate-500 hover:bg-slate-100';
+                let circleClass = isActive ? 'bg-white text-blue-600 font-bold' : 
+                                  isPassed ? 'bg-blue-200 text-blue-800' : 
+                                  'bg-slate-200 text-slate-600';
+                
+                let html = `<button onclick="setStep(${s.num})" class="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs transition ${btnClass}">
+                    <div class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${circleClass}">
+                        ${isPassed ? `<i data-lucide="check" class="w-3 h-3"></i>` : s.num}
+                    </div>
+                    <span class="whitespace-nowrap">${s.label}</span>
+                </button>`;
+                
+                if (idx < 5) html += `<i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>`;
+                return html;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function renderAllSteps() {
+            // Sidebar
+            document.getElementById('sidebar-topic-title').textContent = project.title || "Topik Belum Dipilih";
+            
+            // Step 1
+            document.getElementById('btn-format-16-9').className = `format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${project.format === '16:9' ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-white'}`;
+            document.getElementById('btn-format-16-9').firstElementChild.className = `w-9 h-6 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[9px] mt-0.5 ${project.format === '16:9' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'}`;
+            
+            document.getElementById('btn-format-9-16').className = `format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${project.format === '9:16' ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-white'}`;
+            document.getElementById('btn-format-9-16').firstElementChild.className = `w-5 h-8 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[8px] ${project.format === '9:16' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'}`;
+
+            if(document.activeElement !== document.getElementById('input-title')) document.getElementById('input-title').value = project.title;
+            document.getElementById('select-category').value = project.category;
+            document.getElementById('select-mode').value = project.mode;
+
+            // Step 1: Topics Grid
+            const tGrid = document.getElementById('topics-grid-container');
+            document.getElementById('topics-count-label').textContent = `Rekomendasi Topik Trending (${project.step1Data.topics.length})`;
+            if (project.step1Data.topics.length === 0) {
+                tGrid.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                        <i data-lucide="search" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                        <p class="text-xs font-medium text-slate-600">Belum ada topik yang ditemukan.</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">Klik "Cari Tren Google" di atas atau ketik judul Anda secara langsung.</p>
+                    </div>`;
+            } else {
+                tGrid.innerHTML = project.step1Data.topics.map((t, idx) => {
+                    const isSelected = project.step1Data.selectedTopic === t.title;
+                    const btnClass = isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200';
+                    const cardClass = isSelected ? 'bg-blue-50/70 border-blue-500 shadow-sm ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-slate-300';
+                    return `
+                        <div class="p-4 rounded-2xl border transition flex flex-col justify-between ${cardClass}">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${t.badge || `Trending #${idx + 1}`}</span>
+                                </div>
+                                <h4 class="font-bold text-slate-900 text-sm mb-1">${t.title}</h4>
+                                <p class="text-xs text-slate-500 mb-3">${t.reason}</p>
+                            </div>
+                            <button onclick="selectTopic(${idx})" class="w-full text-xs font-semibold py-2 rounded-xl border transition ${btnClass}">
+                                ${isSelected ? '✓ Topik Terpilih' : 'Gunakan Topik Ini'}
+                            </button>
+                        </div>`;
+                }).join('');
+            }
+
+            // Step 1: Grounding
+            const gContainer = document.getElementById('grounding-sources-container');
+            const gList = document.getElementById('grounding-sources-list');
+            if (groundingSources.length > 0) {
+                gContainer.classList.remove('hidden');
+                gList.innerHTML = groundingSources.map(src => `
+                    <a href="${src.uri}" target="_blank" class="bg-white border border-slate-200 hover:border-blue-300 text-blue-600 px-2.5 py-1 rounded-lg text-[11px] flex items-center space-x-1">
+                        <span class="line-clamp-1 max-w-[150px]">${src.title}</span><i data-lucide="external-link" class="w-2.5 h-2.5"></i>
+                    </a>
+                `).join('');
+            } else {
+                gContainer.classList.add('hidden');
+            }
+
+            // Step 2
+            document.getElementById('lbl-script-category').textContent = project.category;
+            document.getElementById('lbl-script-topic').textContent = project.step1Data.selectedTopic || project.title || "Belum ada topik terpilih";
+            if(document.activeElement !== document.getElementById('input-duration')) document.getElementById('input-duration').value = project.step2Data.targetDuration;
+            
+            const presets = project.format === '9:16' ? ['30 Detik', '45 Detik', '60 Detik (Shorts)', '90 Detik'] : ['5-8 Menit', '8-10 Menit', '10-15 Menit', '15-20 Menit'];
+            document.getElementById('duration-presets').innerHTML = `<span class="text-[10px] text-slate-400 font-medium mr-0.5">Pilihan Cepat:</span>` + 
+                presets.map(dur => `<button onclick="setDuration('${dur}')" class="text-[10px] px-2 py-0.5 rounded-lg border transition ${project.step2Data.targetDuration === dur ? 'bg-blue-600 text-white border-blue-600 font-semibold' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}">${dur}</button>`).join('');
+
+            if(document.activeElement !== document.getElementById('input-custom-instruction')) document.getElementById('input-custom-instruction').value = project.step2Data.customInstruction;
+            if(document.activeElement !== document.getElementById('textarea-script')) document.getElementById('textarea-script').value = project.step2Data.script;
+            document.getElementById('lbl-word-count').textContent = project.step2Data.wordCount;
+            document.getElementById('lbl-est-duration').textContent = project.step2Data.estimatedDuration;
+
+            // Step 3
+            document.getElementById('visual-styles-grid').innerHTML = VISUAL_STYLES.map(s => {
+                const isSelected = project.step3Data.selectedStyleId === s.id;
+                const cls = isSelected ? 'bg-[#fcf8f2] border-[#cbb387] text-amber-950 font-bold shadow-sm ring-1 ring-[#cbb387]' : 'bg-white border-slate-200 text-slate-700 hover:border-[#e6dcc8] hover:bg-[#faf7f2]';
+                return `<button onclick="setStyle('${s.id}')" class="px-4 py-3.5 rounded-2xl border text-left transition flex items-center space-x-3 text-xs font-medium cursor-pointer ${cls}"><span class="text-lg leading-none">${s.icon}</span><span>${s.label}</span></button>`;
+            }).join('');
+
+            document.getElementById('lbl-prompts-count').textContent = `Daftar Scene Prompts (${project.step3Data.prompts.length})`;
+            if (project.step3Data.prompts.length > 0) {
+                document.getElementById('visual-prompts-container').innerHTML = project.step3Data.prompts.map((p, i) => `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
+                        <div class="flex-1 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <span class="bg-slate-100 text-slate-600 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase border border-slate-200">Scene ${p.sceneNum}</span>
+                                <button onclick="copyToClipboard(document.getElementById('vp-${i}').value, 'Prompt Scene ${p.sceneNum}')" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
+                            </div>
+                            <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg italic">"${p.context}"</p>
+                            <textarea id="vp-${i}" onchange="updatePrompt('vp', ${i}, this.value)" class="w-full text-xs font-mono bg-slate-900 text-green-400 border border-slate-800 rounded-xl p-3 focus:ring-1 focus:ring-blue-500 outline-none leading-relaxed" rows="4">${p.prompt}</textarea>
+                        </div>
+                        <div class="md:w-48 flex-shrink-0 flex flex-col items-center justify-center space-y-2">
+                            ${imagePreviews[p.id] ? `<img src="${imagePreviews[p.id]}" class="w-full bg-slate-200 rounded-xl object-cover shadow-sm border border-slate-200 aspect-video">` : `<div class="w-full bg-slate-100 rounded-xl border border-dashed border-slate-300 flex items-center justify-center aspect-video"><i data-lucide="image" class="w-6 h-6 text-slate-300"></i></div>`}
+                            <button onclick="previewImage('${p.id}', ${i})" ${loadingImageId === p.id ? 'disabled' : ''} class="text-[10px] w-full font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg flex items-center justify-center space-x-1 transition disabled:opacity-50">
+                                ${loadingImageId === p.id ? `<i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i><span>Generating...</span>` : `<i data-lucide="sparkles" class="w-3 h-3 text-amber-500"></i><span>Preview Imagen</span>`}
+                            </button>
+                        </div>
+                    </div>`).join('');
+            }
+
+            // Step 4
+            if(document.activeElement !== document.getElementById('input-anim-style')) document.getElementById('input-anim-style').value = project.step4Data.animationStyle;
+            document.getElementById('lbl-video-prompts-count').textContent = `Daftar Video Motion Prompts (${project.step4Data.videoPrompts.length})`;
+            if (project.step4Data.videoPrompts.length > 0) {
+                document.getElementById('video-prompts-container').innerHTML = project.step4Data.videoPrompts.map((p, i) => `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="bg-slate-100 text-slate-600 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase border border-slate-200">Motion Scene ${p.sceneNum}</span>
+                            <button onclick="copyToClipboard(document.getElementById('vidp-${i}').value, 'Video Prompt Scene ${p.sceneNum}')" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
+                        </div>
+                        <textarea id="vidp-${i}" onchange="updatePrompt('vidp', ${i}, this.value)" class="w-full text-xs font-mono bg-slate-900 text-blue-400 border border-slate-800 rounded-xl p-3 outline-none leading-relaxed" rows="2">${p.prompt}</textarea>
+                    </div>`).join('');
+            }
+
+            // Step 5
+            if(document.activeElement !== document.getElementById('input-cover-text')) document.getElementById('input-cover-text').value = project.step5Data.selectedTextOption || project.title;
+            if(document.activeElement !== document.getElementById('textarea-cover-prompt')) document.getElementById('textarea-cover-prompt').value = project.step5Data.readyPrompt;
+
+            // Step 6
+            if (project.step6Data.seoTitles.length > 0) {
+                document.getElementById('seo-titles-container').innerHTML = project.step6Data.seoTitles.map((t, i) => `
+                    <div class="flex items-center justify-between group">
+                        <span class="text-xs font-semibold text-slate-800">${i+1}. ${t}</span>
+                        <button onclick="copyToClipboard('${t.replace(/'/g, "\\'")}', 'Judul')" class="opacity-0 group-hover:opacity-100 transition text-[10px] text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md hover:bg-slate-100">Salin</button>
+                    </div>`).join('');
+            }
+            if(document.activeElement !== document.getElementById('textarea-seo-desc')) document.getElementById('textarea-seo-desc').value = project.step6Data.videoDescription;
+            if(document.activeElement !== document.getElementById('textarea-seo-tags')) document.getElementById('textarea-seo-tags').value = project.step6Data.seoKeywords;
+            if(document.activeElement !== document.getElementById('textarea-seo-pin')) document.getElementById('textarea-seo-pin').value = project.step6Data.pinnedComment;
+
+            lucide.createIcons();
+        }
+
+        // Action Handlers
+        window.selectTopic = (idx) => {
+            const t = project.step1Data.topics[idx];
+            const dur = t.recommendedDuration || (project.format === '9:16' ? "30-60 Detik (Shorts)" : "10-15 Menit");
+            project.title = t.title;
+            project.step1Data.selectedTopic = t.title;
+            project.step1Data.selectedReason = t.reason;
+            project.step2Data.targetDuration = dur;
+            renderAllSteps();
+            showToast(`Topik dipilih: ${t.title}`, "info");
+        };
+
+        window.setDuration = (dur) => { project.step2Data.targetDuration = dur; renderAllSteps(); };
+        window.setStyle = (id) => { 
+            const s = VISUAL_STYLES.find(x => x.id === id);
+            project.step3Data.selectedStyleId = id; 
+            project.step3Data.visualStyle = s.promptPrefix; 
+            syncAllStepsWithScript(); 
+            showToast(`Gaya visual diubah: ${s.label}`, "info");
+        };
+        window.updatePrompt = (type, idx, val) => {
+            if (type === 'vp') project.step3Data.prompts[idx].prompt = val;
+            if (type === 'vidp') project.step4Data.videoPrompts[idx].prompt = val;
+        };
+
+        window.previewImage = async (promptId, idx) => {
+            const p = project.step3Data.prompts[idx].prompt;
+            loadingImageId = promptId;
+            renderAllSteps();
+            try {
+                const img = await generateImagePreview(p, project.format);
+                imagePreviews[promptId] = img;
+                showToast("Preview gambar AI berhasil dibuat!", "success");
+            } catch (err) {
+                showToast("Gagal membuat preview gambar. Cek API Key.", "error");
+            } finally {
+                loadingImageId = null;
+                renderAllSteps();
+            }
+        };
+
+        window.handleCreateNewProject = () => document.getElementById('reset-modal').classList.remove('hidden');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            renderStepper();
+            renderAllSteps();
+
+            // Nav Tabs
+            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
+                btn.addEventListener('click', () => { activeTab = btn.dataset.target; updateNavigation(); });
+            });
+
+            // Settings
+            document.getElementById('input-api-key').addEventListener('input', (e) => apiKey = e.target.value);
+
+            // Format Buttons
+            document.getElementById('btn-format-16-9').addEventListener('click', () => {
+                project.format = "16:9"; project.step2Data.targetDuration = "10-15 Menit";
+                syncAllStepsWithScript(); showToast("Format diubah ke 16:9", "info");
+            });
+            document.getElementById('btn-format-9-16').addEventListener('click', () => {
+                project.format = "9:16"; project.step2Data.targetDuration = "30-60 Detik (Shorts)";
+                syncAllStepsWithScript(); showToast("Format diubah ke 9:16", "info");
+            });
+
+            // Step 1 Inputs
+            document.getElementById('input-title').addEventListener('input', (e) => { project.title = e.target.value; project.step1Data.selectedTopic = e.target.value; renderAllSteps(); });
+            document.getElementById('select-category').addEventListener('change', (e) => { project.category = e.target.value; });
+            document.getElementById('select-mode').addEventListener('change', (e) => { project.mode = e.target.value; });
+            
+            document.getElementById('btn-generate-topics').addEventListener('click', async () => {
+                setLoading(true, "Mencari tren terbaru di Google Search...");
+                groundingSources = [];
+                const prompt = `Gunakan pencarian Google Search untuk menemukan ide topik SEDANG TRENDING mengenai kategori: "${project.category}" dengan sudut pandang/mode: "${project.mode}". Buat 6 rekomendasi format JSON Array murni: [{"title":"","reason":"","score":5,"badge":"","recommendedDuration":""}]`;
+                try {
+                    const res = await callGeminiAPI(prompt, "Anda AI Content Strategist untuk channel edukasi.", true);
+                    groundingSources = res.sources;
+                    let clean = res.text.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const match = clean.match(/\[.*\]/s);
+                    const parsed = JSON.parse(match ? match[0] : clean);
+                    project.step1Data.topics = parsed.map((t, i) => ({ ...t, id: `t-${Date.now()}-${i}` }));
+                    showToast("Berhasil menemukan ide topik!", "success");
+                } catch (err) {
+                    showToast("Gagal mencari tren Google.", "error");
+                } finally {
+                    setLoading(false);
+                    renderAllSteps();
+                }
+            });
+
+            // Step 2 Logic
+            document.getElementById('input-duration').addEventListener('input', (e) => project.step2Data.targetDuration = e.target.value);
+            document.getElementById('input-custom-instruction').addEventListener('input', (e) => project.step2Data.customInstruction = e.target.value);
+            
+            const handleScriptGen = async (actionType = "generate") => {
+                const topic = project.step1Data.selectedTopic || project.title;
+                if (!topic) return showToast("Pilih topik dulu!", "error");
+                setLoading(true, `Memproses naskah penceritaan naratif...`);
+                
+                let prompt = "";
+                let sys = "Anda penulis naskah narasi edukasi. Pertahankan penceritaan mengalir TANPA JUDUL BAB.";
+                
+                if (actionType === "generate") {
+                    sys += " Tulis sekitar 1400 kata mengalir seperti cerita.";
+                    prompt = `Tulis narasi untuk topik: "${topic}". Kategori: ${project.category}. Target Durasi: ${project.step2Data.targetDuration}. Instruksi: ${project.step2Data.customInstruction}`;
+                } else if (actionType === "expand") {
+                    prompt = `Perluas naskah ini agar lebih panjang mengalir lurus:\n\n${project.step2Data.script}`;
+                } else if (actionType === "shorten") {
+                    prompt = `Rangkum naskah ini agar padat mengalir lurus:\n\n${project.step2Data.script}`;
+                }
+
+                try {
+                    const res = await callGeminiAPI(prompt, sys, false);
+                    const words = res.text.trim().split(/\s+/).length;
+                    const estMin = Math.ceil(words / 130);
+                    project.step2Data.script = res.text;
+                    project.step2Data.wordCount = words;
+                    project.step2Data.estimatedDuration = `${Math.max(1, estMin-2)}-${estMin} Menit`;
+                    syncAllStepsWithScript();
+                    showToast("Naskah berhasil diproses!", "success");
+                } catch (err) {
+                    showToast("Gagal memproses naskah.", "error");
+                } finally {
+                    setLoading(false);
+                    renderAllSteps();
+                }
+            };
+
+            document.getElementById('btn-generate-script').addEventListener('click', () => handleScriptGen("generate"));
+            document.getElementById('btn-script-expand').addEventListener('click', () => { if(project.step2Data.script) handleScriptGen("expand"); });
+            document.getElementById('btn-script-shorten').addEventListener('click', () => { if(project.step2Data.script) handleScriptGen("shorten"); });
+            document.getElementById('btn-script-copy').addEventListener('click', () => copyToClipboard(project.step2Data.script, "Naskah"));
+            
+            document.getElementById('textarea-script').addEventListener('input', (e) => {
+                const val = e.target.value;
+                const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+                project.step2Data.script = val;
+                project.step2Data.wordCount = words;
+                project.step2Data.estimatedDuration = `${Math.max(0, Math.ceil(words/130) - 1)}-${Math.ceil(words/130)} Menit`;
+                syncAllStepsWithScript();
+            });
+
+            // Step 3-6 Setup Buttons
+            document.getElementById('btn-sync-prompts').addEventListener('click', syncAllStepsWithScript);
+            document.getElementById('btn-copy-all-prompts').addEventListener('click', () => copyToClipboard(project.step3Data.prompts.map(p => `Scene ${p.sceneNum}:\n${p.prompt}`).join('\n\n'), "Semua Prompts"));
+            document.getElementById('input-anim-style').addEventListener('input', (e) => {
+                const s = e.target.value; project.step4Data.animationStyle = s;
+                project.step4Data.videoPrompts = project.step4Data.videoPrompts.map(p => ({...p, prompt: `${s}, ${p.prompt.substring(p.prompt.indexOf("of: ")) || p.prompt}`}));
+                renderAllSteps();
+            });
+            document.getElementById('btn-copy-all-video-prompts').addEventListener('click', () => copyToClipboard(project.step4Data.videoPrompts.map(p => `Scene ${p.sceneNum}:\n${p.prompt}`).join('\n\n'), "Video Prompts"));
+            
+            document.getElementById('input-cover-text').addEventListener('input', (e) => {
+                project.step5Data.selectedTextOption = e.target.value; syncAllStepsWithScript();
+            });
+            document.getElementById('textarea-cover-prompt').addEventListener('input', (e) => project.step5Data.readyPrompt = e.target.value);
+            document.getElementById('btn-copy-cover-prompt').addEventListener('click', () => copyToClipboard(project.step5Data.readyPrompt, "Cover Prompt"));
+            
+            document.getElementById('btn-copy-titles').addEventListener('click', () => copyToClipboard(project.step6Data.seoTitles.join('\n'), "Daftar Judul"));
+            document.getElementById('textarea-seo-desc').addEventListener('input', e => project.step6Data.videoDescription = e.target.value);
+            document.getElementById('btn-copy-desc').addEventListener('click', () => copyToClipboard(project.step6Data.videoDescription, "Deskripsi"));
+            document.getElementById('textarea-seo-tags').addEventListener('input', e => project.step6Data.seoKeywords = e.target.value);
+            document.getElementById('btn-copy-tags').addEventListener('click', () => copyToClipboard(project.step6Data.seoKeywords, "Tags"));
+            document.getElementById('textarea-seo-pin').addEventListener('input', e => project.step6Data.pinnedComment = e.target.value);
+            document.getElementById('btn-copy-pin').addEventListener('click', () => copyToClipboard(project.step6Data.pinnedComment, "Komentar Pin"));
+
+            // Reset logic
+            document.getElementById('btn-show-reset').addEventListener('click', window.handleCreateNewProject);
+            document.getElementById('btn-cancel-reset').addEventListener('click', () => document.getElementById('reset-modal').classList.add('hidden'));
+            document.getElementById('btn-confirm-reset').addEventListener('click', () => {
+                project = CREATE_EMPTY_PROJECT();
+                imagePreviews = {}; groundingSources = [];
+                activeTab = 'editor';
+                updateNavigation(); setStep(1); renderAllSteps();
+                document.getElementById('reset-modal').classList.add('hidden');
+                showToast("Sesi kerja direset!", "info");
+            });
+        });
+    </script>
+</body>
+</html>
