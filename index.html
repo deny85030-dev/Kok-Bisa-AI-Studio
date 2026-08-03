@@ -5,1115 +5,1566 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kok Bisa? Studio AI</title>
     
-    <!-- Memuat Tailwind CSS melalui CDN -->
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Memuat Google Fonts (Inter) -->
+    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     
-    <!-- Memuat Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- React & Babel CDNs -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        /* Kustomisasi scrollbar ringan */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800 flex flex-col overflow-hidden">
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-500 selection:text-white">
+    <div id="root"></div>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transform transition-all duration-300 translate-y-20 opacity-0 pointer-events-none">
-        <i id="toast-icon" data-lucide="check-circle-2" class="w-4 h-4"></i>
-        <span id="toast-message">Pesan</span>
-    </div>
+    <script type="text/babel">
+        const Icon = ({ path, className = "w-4 h-4", viewBox = "0 0 24 24", fill = "none", stroke = "currentColor", strokeWidth = "2" }) => (
+            <svg className={className} viewBox={viewBox} fill={fill} stroke={stroke} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
+                {path}
+            </svg>
+        );
 
-    <!-- Confirmation Modal for Reset Session -->
-    <div id="reset-modal" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl border border-slate-200">
-            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-1">
-                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
-            </div>
-            <div>
-                <h3 class="font-bold text-slate-900 text-base">Reset Sesi Kerja?</h3>
-                <p class="text-xs text-slate-500 mt-1">Seluruh progres naskah, topik, dan prompt yang belum disalin akan di-reset ke awal.</p>
-            </div>
-            <div class="flex items-center space-x-2 pt-2">
-                <button id="btn-cancel-reset" class="flex-1 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
-                    Batal
-                </button>
-                <button id="btn-confirm-reset" class="flex-1 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition">
-                    Ya, Reset
-                </button>
-            </div>
-        </div>
-    </div>
+        const Sparkles = (props) => <Icon {...props} path={<><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></>} />;
+        const Settings = (props) => <Icon {...props} path={<><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></>} />;
+        const Check = (props) => <Icon {...props} path={<polyline points="20 6 9 17 4 12"/>} />;
+        const Copy = (props) => <Icon {...props} path={<><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></>} />;
+        const Search = (props) => <Icon {...props} path={<><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></>} />;
+        const ChevronRight = (props) => <Icon {...props} path={<path d="m9 18 6-6-6-6"/>} />;
+        const ChevronLeft = (props) => <Icon {...props} path={<path d="m15 18-6-6 6-6"/>} />;
+        const RefreshCw = (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></>} />;
+        const Zap = (props) => <Icon {...props} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />;
+        const AlertCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>} />;
+        const FileText = (props) => <Icon {...props} path={<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />;
+        const Video = (props) => <Icon {...props} path={<><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></>} />;
+        const ImageIcon = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></>} />;
+        const Tag = (props) => <Icon {...props} path={<path d="M12 2H2v10l11.29 11.29a1 1 0 0 0 1.41 0l7.29-7.29a1 1 0 0 0 0-1.41L12 2zM7 7h.01"/>} />;
+        const Star = (props) => <Icon {...props} path={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>} />;
+        const ExternalLink = (props) => <Icon {...props} path={<><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></>} />;
+        const Globe = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></>} />;
+        const TrendingUp = (props) => <Icon {...props} path={<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>} />;
+        const Palette = (props) => <Icon {...props} path={<><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.71 1.7-1.63 0-.43-.17-.83-.44-1.12a1.64 1.64 0 0 1 1.16-2.75H17c2.76 0 5-2.24 5-5 0-5.5-4.5-10-10-10z"/></>} />;
+        const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
 
-    <!-- Global Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex flex-col items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl p-6 shadow-2xl flex flex-col items-center max-w-sm w-full space-y-4">
-            <div class="w-12 h-12 rounded-full border-4 border-blue-100 border-t-blue-600 animate-spin"></div>
-            <div class="text-center">
-                <h3 class="font-bold text-slate-900 text-sm mb-1">AI Sedang Bekerja...</h3>
-                <p id="loading-text" class="text-xs text-slate-500 font-medium">Memuat...</p>
-            </div>
-        </div>
-    </div>
+        const DEFAULT_GEMINI_KEY = ""; // Provided at runtime or user setting
 
-    <!-- Main Top Header Bar -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 lg:px-6 py-3 flex items-center justify-between shadow-sm">
-        <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-                <i data-lucide="sparkles" class="w-5 h-5 animate-pulse"></i>
-            </div>
-            <div>
-                <div class="flex items-center space-x-2">
-                    <h1 class="font-bold text-slate-900 text-base sm:text-lg tracking-tight">Kok Bisa? Studio AI</h1>
-                    <span class="bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 flex items-center space-x-1">
-                        <i data-lucide="globe" class="w-3 h-3"></i>
-                        <span>Google Search Live</span>
-                    </span>
-                </div>
-                <p class="text-xs text-slate-500 hidden sm:block">AI Workflow Generator Naskah Narasi Edukasi Mengalir</p>
-            </div>
-        </div>
-        <div class="flex items-center space-x-2">
-            <button id="btn-show-reset" class="flex items-center space-x-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition border border-red-200">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-                <span class="hidden sm:inline">Reset Sesi & Mulai Baru</span>
-            </button>
-        </div>
-    </header>
-
-    <div class="flex flex-1 overflow-hidden h-full">
-        
-        <!-- Sidebar -->
-        <aside class="w-60 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col justify-between hidden md:flex h-full">
-            <div class="p-4 space-y-1">
-                <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Navigasi Studio</div>
-                
-                <button id="tab-btn-editor" class="nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition bg-blue-50 text-blue-700 font-semibold" data-target="editor">
-                    <i data-lucide="zap" class="w-4 h-4 text-blue-600"></i>
-                    <span>Workflow Editor</span>
-                </button>
-
-                <button id="tab-btn-settings" class="nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 hover:bg-slate-100" data-target="settings">
-                    <i data-lucide="settings" class="w-4 h-4 text-slate-500"></i>
-                    <span>Pengaturan API</span>
-                </button>
-            </div>
-
-            <div class="p-4 border-t border-slate-100 bg-slate-50/50">
-                <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-1.5">
-                    <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Status Sesi Saat Ini</span>
-                    <p id="sidebar-topic-title" class="text-xs font-semibold text-slate-800 line-clamp-1">Topik Belum Dipilih</p>
-                    <p id="sidebar-step-info" class="text-[11px] text-slate-500">Step 1 dari 6</p>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content Pane -->
-        <main class="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50 h-full relative">
-            
-            <!-- TAB 1: WORKFLOW EDITOR -->
-            <div id="view-editor" class="max-w-5xl mx-auto space-y-6 block">
-                
-                <!-- Stepper Header -->
-                <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
-                    <div id="stepper-container" class="flex items-center justify-between min-w-[650px] px-2">
-                        <!-- Stepper items di-generate via JS -->
-                    </div>
-                </div>
-
-                <!-- STEP 1: Topik & Tren -->
-                <div id="step-1" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 block">
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 1 dari 6</span>
-                                <span class="text-slate-300">•</span>
-                                <span class="text-xs text-slate-500">Format Konten & Pencarian Tren</span>
-                            </div>
-                            <h2 class="text-xl font-bold text-slate-900 mt-1">Setup Format & Topic Discovery</h2>
-                            <p class="text-sm text-slate-500">Pilih format rasio konten terlebih dahulu, lalu cari ide topik yang sedang tren di Google.</p>
-                        </div>
-                    </div>
-
-                    <!-- Format Selector -->
-                    <div class="space-y-2">
-                        <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">1. Pilih Format Konten & Rasio</label>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <button id="btn-format-16-9" type="button" class="format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm">
-                                <div class="w-9 h-6 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[9px] mt-0.5 border-blue-600 bg-blue-100 text-blue-700">16:9</div>
-                                <div>
-                                    <div class="flex items-center space-x-2"><span class="font-bold text-slate-900 text-xs">📹 Long-form Video (16:9 Widescreen)</span></div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">YouTube Reguler, Dokumenter & Animasi Lanskap (Durasi 8 - 15+ menit).</p>
-                                </div>
-                            </button>
-
-                            <button id="btn-format-9-16" type="button" class="format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition bg-slate-50 border-slate-200 hover:bg-white">
-                                <div class="w-5 h-8 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[8px] border-slate-400 text-slate-500">9:16</div>
-                                <div>
-                                    <div class="flex items-center space-x-2"><span class="font-bold text-slate-900 text-xs">📱 Short-form Content (9:16 Portrait)</span></div>
-                                    <p class="text-[11px] text-slate-500 mt-0.5">YouTube Shorts, TikTok, Instagram Reels (Durasi singkat 30 - 60 detik).</p>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Manual Title & Filters -->
-                    <div class="space-y-4 pt-2">
-                        <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">2. Cari atau Tentukan Topik Konten</label>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Judul / Topik Pilihan Sendiri (Opsional)</label>
-                            <input id="input-title" type="text" placeholder="Ketik topik Anda sendiri atau klik pencarian tren..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none" />
-                        </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Kategori Edukasi</label>
-                                <select id="select-category" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800">
-                                    <option value="Fakta Unik & Anomali Dunia">💡 Fakta Unik & Anomali Dunia</option>
-                                    <option value="Kisah Misteri & Konspirasi Sains">🔍 Kisah Misteri & Konspirasi Sains</option>
-                                    <option value="Sudut Pandang POV & Simulasi">👀 Sudut Pandang POV & Simulasi</option>
-                                    <option value="Luar Angkasa & Astronomi">🌌 Luar Angkasa & Astronomi</option>
-                                    <option value="Sains & Fisika">🔬 Sains & Fisika</option>
-                                    <option value="Tubuh Manusia & Biologi">🧬 Tubuh Manusia & Biologi</option>
-                                    <option value="Sejarah & Peradaban">📜 Sejarah & Peradaban</option>
-                                    <option value="Teknologi & AI">🤖 Teknologi, AI & Masa Depan</option>
-                                    <option value="Psikologi & Perilaku">🧠 Psikologi & Perilaku Manusia</option>
-                                    <option value="Pop Culture & Mitos vs Fakta">🎬 Pop Culture & Mitos vs Fakta</option>
-                                    <option value="Geografi & Fenomena Alam Ekstrem">🌍 Geografi & Fenomena Alam Ekstrem</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-slate-700 mb-1">Sudut Pandang Ide</label>
-                                <select id="select-mode" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none">
-                                    <option value="Sedang Viral (Trending Google)">🔥 Sedang Viral (Trending Google)</option>
-                                    <option value="Mind-Blowing & Eksistensial">🤯 Mind-Blowing & Eksistensial</option>
-                                    <option value="Pengandaian (What If)">❓ Pengandaian (What If)</option>
-                                    <option value="Perspektif Orang Pertama (POV)">👁️ Perspektif Orang Pertama (POV)</option>
-                                    <option value="Penemuan & Misteri Terkini">🗝️ Penemuan & Misteri Terkini</option>
-                                </select>
-                            </div>
-                            <div class="flex items-end">
-                                <button id="btn-generate-topics" class="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs py-2.5 px-4 rounded-xl shadow-md transition">
-                                    <i data-lucide="globe" class="w-4 h-4"></i>
-                                    <span>Cari Tren Google</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Grounding Sources -->
-                    <div id="grounding-sources-container" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                        <div class="flex items-center space-x-1.5 text-slate-700 font-semibold">
-                            <i data-lucide="globe" class="w-3.5 h-3.5 text-blue-600"></i>
-                            <span>Sumber Pencarian Web Google:</span>
-                        </div>
-                        <div id="grounding-sources-list" class="flex flex-wrap gap-2 pt-1"></div>
-                    </div>
-
-                    <!-- Topic Search Results Grid -->
-                    <div class="space-y-3 pt-2">
-                        <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
-                            <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i>
-                            <span id="topics-count-label">Rekomendasi Topik Trending (0)</span>
-                        </h3>
-                        <div id="topics-grid-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Injected via JS -->
-                            <div class="col-span-1 md:col-span-2 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                                <i data-lucide="search" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
-                                <p class="text-xs font-medium text-slate-600">Belum ada topik yang ditemukan.</p>
-                                <p class="text-[11px] text-slate-400 mt-0.5">Klik "Cari Tren Google" di atas atau ketik judul Anda secara langsung.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end pt-4 border-t border-slate-100">
-                        <button onclick="setStep(2)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
-                            <span>Lanjut ke Step 2 (Naskah)</span>
-                            <i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 2: Script -->
-                <div id="step-2" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 2 dari 6</span>
-                                <span class="text-slate-300">•</span>
-                                <span class="text-xs text-slate-500">Naskah Narasi Alami</span>
-                            </div>
-                            <h2 class="text-xl font-bold text-slate-900 mt-1">Continuous Script Storytelling</h2>
-                            <p class="text-sm text-slate-500">Naskah cerita mengalir lurus secara alami tanpa potongan judul bab rigid.</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-blue-50/60 border border-blue-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
-                        <div>
-                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Topik Terpilih (<span id="lbl-script-category"></span>)</span>
-                            <h3 id="lbl-script-topic" class="font-bold text-slate-900 text-base">Belum ada topik terpilih</h3>
-                        </div>
-                        <button id="btn-generate-script" class="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition whitespace-nowrap self-start md:self-auto">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
-                            <span>Generate Naskah Narasi</span>
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <div class="flex items-center justify-between mb-1">
-                                <label class="block text-xs font-semibold text-slate-700">Target Durasi Video</label>
-                            </div>
-                            <div class="space-y-2">
-                                <input id="input-duration" type="text" placeholder="Ketik durasi..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800" />
-                                <div id="duration-presets" class="flex flex-wrap items-center gap-1.5 pt-0.5">
-                                    <!-- Injected via JS -->
-                                </div>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Instruksi Cerita Khusus</label>
-                            <input id="input-custom-instruction" type="text" placeholder="Contoh: Fokuskan pada analogi santai..." class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white outline-none" />
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center space-x-3 text-xs text-slate-500 font-medium">
-                                <span>Jumlah Kata: <strong id="lbl-word-count" class="text-slate-800">0</strong></span>
-                                <span>•</span>
-                                <span>Estimasi Durasi: <strong id="lbl-est-duration" class="text-slate-800">0 Menit</strong></span>
-                            </div>
-                            <div class="flex items-center space-x-1.5">
-                                <button id="btn-script-expand" class="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition">+ Perluas</button>
-                                <button id="btn-script-shorten" class="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition">- Ringkas</button>
-                                <button id="btn-script-copy" class="text-[11px] font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg transition flex items-center space-x-1">
-                                    <i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span>
-                                </button>
-                            </div>
-                        </div>
-                        <textarea id="textarea-script" rows="16" placeholder="Naskah cerita narasi yang mengalir lurus akan muncul di sini..." class="w-full text-xs font-sans bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed text-slate-800"></textarea>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
-                        <button onclick="setStep(1)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
-                        <button onclick="setStep(3)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
-                            <span>Lanjut ke Step 3 (Visual)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 3: Visual Prompts -->
-                <div id="step-3" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 3 dari 6</span>
-                                <span class="text-slate-300">•</span>
-                                <span class="text-xs text-slate-500">Image Generation Prompts</span>
-                            </div>
-                            <h2 class="text-xl font-bold text-slate-900 mt-1">Visual Prompts per Scene</h2>
-                            <p class="text-sm text-slate-500">Pilih gaya visual adegan di bawah ini, lalu AI akan menyusun prompt untuk Imagen/Midjourney.</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between">
-                            <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
-                                <i data-lucide="palette" class="w-4 h-4 text-amber-600"></i>
-                                <span>Pilih Gaya Visual / Art Style</span>
-                            </label>
-                            <button id="btn-sync-prompts" class="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center space-x-1">
-                                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Sinkronkan Scene</span>
-                            </button>
-                        </div>
-                        <div id="visual-styles-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
-
-                    <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
-                                <i data-lucide="layout-template" class="w-4 h-4 text-slate-400"></i>
-                                <span id="lbl-prompts-count">Daftar Scene Prompts (0)</span>
-                            </h3>
-                            <button id="btn-copy-all-prompts" class="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">Salin Semua</button>
-                        </div>
-                        <div id="visual-prompts-container" class="space-y-4">
-                            <!-- Injected via JS -->
-                            <div class="text-center py-8"><p class="text-xs text-slate-500">Belum ada naskah. Silakan generate naskah di Step 2.</p></div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
-                        <button onclick="setStep(2)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
-                        <button onclick="setStep(4)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
-                            <span>Lanjut ke Step 4 (Video)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 4: Video Prompts -->
-                <div id="step-4" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 4 dari 6</span>
-                                <span class="text-slate-300">•</span>
-                                <span class="text-xs text-slate-500">Video Generation Prompts</span>
-                            </div>
-                            <h2 class="text-xl font-bold text-slate-900 mt-1">Image-to-Video Motion Prompts</h2>
-                            <p class="text-sm text-slate-500">Digunakan untuk alat AI seperti Runway Gen-2 atau Luma Dream Machine.</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-xs font-semibold text-slate-700">Instruksi Kamera / Pergerakan Umum</label>
-                        <input id="input-anim-style" type="text" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800" />
-                    </div>
-
-                    <div class="bg-slate-50 rounded-2xl border border-slate-200 p-4 space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
-                                <i data-lucide="film" class="w-4 h-4 text-slate-400"></i>
-                                <span id="lbl-video-prompts-count">Daftar Video Motion Prompts (0)</span>
-                            </h3>
-                            <button id="btn-copy-all-video-prompts" class="text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition">Salin Semua</button>
-                        </div>
-                        <div id="video-prompts-container" class="space-y-4">
-                            <!-- Injected via JS -->
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
-                        <button onclick="setStep(3)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
-                        <button onclick="setStep(5)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
-                            <span>Lanjut ke Step 5 (Thumbnail)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 5: Thumbnail -->
-                <div id="step-5" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 5 dari 6</span>
-                                <span class="text-slate-300">•</span>
-                                <span class="text-xs text-slate-500">Thumbnail & Cover</span>
-                            </div>
-                            <h2 class="text-xl font-bold text-slate-900 mt-1">Cover & Thumbnail Studio</h2>
-                            <p class="text-sm text-slate-500">Siapkan prompt khusus untuk cover depan yang memancing klik.</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col items-center text-center space-y-2">
-                            <i data-lucide="image" class="w-8 h-8 text-blue-500"></i>
-                            <div>
-                                <h4 class="text-sm font-bold text-blue-900">Thumbnail / Cover Prompt Generator</h4>
-                                <p class="text-xs text-blue-700 mt-1">Prompt ini dioptimalkan dengan tipografi besar dan kontras tinggi.</p>
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1">Teks Utama pada Gambar</label>
-                            <input id="input-cover-text" type="text" placeholder="Contoh: RAHASIA TERSEMBUNYI!" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white outline-none font-medium" />
-                        </div>
-
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-xs font-semibold text-slate-700">Prompt Gambar Cover Final</label>
-                                <button id="btn-copy-cover-prompt" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1">
-                                    <i data-lucide="copy" class="w-3 h-3"></i><span>Salin Prompt</span>
-                                </button>
-                            </div>
-                            <textarea id="textarea-cover-prompt" class="w-full text-xs font-mono bg-slate-900 text-purple-400 border border-slate-800 rounded-xl p-4 focus:ring-1 focus:ring-purple-500 outline-none leading-relaxed min-h-[120px]"></textarea>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-4 border-t border-slate-100">
-                        <button onclick="setStep(4)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
-                        <button onclick="setStep(6)" class="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition">
-                            <span>Lanjut ke Step 6 (SEO)</span><i data-lucide="chevron-right" class="w-4 h-4"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 6: SEO -->
-                <div id="step-6" class="step-view bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6 hidden">
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <div class="flex items-center space-x-2">
-                                <span class="text-xs font-bold text-emerald-600 uppercase tracking-wider flex items-center"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 mr-1"></i> Step 6 dari 6</span>
-                                <span class="text-slate-300">•</span>
-                                <span class="text-xs text-slate-500">YouTube SEO & Publishing</span>
-                            </div>
-                            <h2 class="text-xl font-bold text-slate-900 mt-1">SEO & Metadata Siap Upload</h2>
-                        </div>
-                    </div>
-
-                    <div class="space-y-5">
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
-                                    <i data-lucide="tag" class="w-4 h-4 text-slate-400"></i><span>Opsi Judul Video Menarik</span>
-                                </label>
-                                <button id="btn-copy-titles" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin Semua</span></button>
-                            </div>
-                            <div id="seo-titles-container" class="bg-slate-50 rounded-xl border border-slate-200 p-3 space-y-2">
-                                <!-- Injected via JS -->
-                            </div>
-                        </div>
-
-                        <div class="space-y-2">
-                            <div class="flex items-center justify-between">
-                                <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
-                                    <i data-lucide="file-text" class="w-4 h-4 text-slate-400"></i><span>Deskripsi Video YouTube</span>
-                                </label>
-                                <button id="btn-copy-desc" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
-                            </div>
-                            <textarea id="textarea-seo-desc" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none min-h-[120px]"></textarea>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">Tag & Keywords</label>
-                                    <button id="btn-copy-tags" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
-                                </div>
-                                <textarea id="textarea-seo-tags" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none" rows="3"></textarea>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex items-center justify-between">
-                                    <label class="block text-xs font-bold text-slate-800 uppercase tracking-wider">Komentar Pin</label>
-                                    <button id="btn-copy-pin" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
-                                </div>
-                                <textarea id="textarea-seo-pin" class="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-1 focus:ring-blue-500 outline-none" rows="3"></textarea>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-between items-center pt-6 border-t border-slate-100">
-                        <button onclick="setStep(5)" class="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"><i data-lucide="chevron-left" class="w-4 h-4"></i><span>Kembali</span></button>
-                        <button onclick="handleCreateNewProject()" class="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-6 py-3 rounded-xl transition shadow-lg shadow-emerald-500/30">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i><span>Selesai! Mulai Proyek Baru</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: API SETTINGS -->
-            <div id="view-settings" class="max-w-2xl mx-auto hidden">
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-                    <div class="flex items-start justify-between border-b border-slate-100 pb-4">
-                        <div>
-                            <h2 class="text-xl font-bold text-slate-900">Pengaturan API Keys</h2>
-                            <p class="text-sm text-slate-500 mt-1">Konfigurasi kunci akses API Anda untuk menggunakan generator AI.</p>
-                        </div>
-                        <i data-lucide="shield-check" class="w-8 h-8 text-emerald-500"></i>
-                    </div>
-
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-semibold text-slate-700 mb-1">Google Gemini API Key</label>
-                            <input id="input-api-key" type="password" placeholder="Masukkan Gemini API Key Anda..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono" />
-                            <p class="text-[11px] text-slate-500 mt-2">Dibutuhkan untuk mencari topik dan menulis naskah. Dapatkan dari <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" class="text-blue-600 hover:underline">Google AI Studio</a>.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </main>
-    </div>
-
-    <script>
-        // Constants
-        const DEFAULT_GEMINI_KEY = "";
-        
         const VISUAL_STYLES = [
-            { id: 'realistic', label: 'Realistik Fotografi', icon: '📷', promptPrefix: 'Realistic Photographic, ultra detailed studio photography, photorealistic, dramatic natural lighting, 8k resolution' },
-            { id: 'flat_vector', label: 'Modern Flat Vector', icon: '🎨', promptPrefix: 'Modern Educational Animation, Flat Illustration, Clean Vector Art, Kok Bisa Style, vibrant palette' },
-            { id: 'pixar_3d', label: '3D Animation (Pixar)', icon: '✨', promptPrefix: '3D Character Animation, Pixar Visual Style, Expressive 3D render, Vibrant Cinema 4D Lighting' },
-            { id: 'anime', label: 'Anime Manga Keyframe', icon: '🌸', promptPrefix: 'Anime Keyframe Art, Japanese Animation Style, Makoto Shinkai aesthetic, vivid cell shading, dramatic anime lighting' },
-            { id: 'sketch', label: 'Cinematic Sketch', icon: '✏️', promptPrefix: 'Cinematic Concept Sketch, Hand-drawn Storyboard Art, Pencil & Ink Line Art, Expressive Hatching, Graphic Concept' },
-            { id: 'retro_comic', label: 'Retro Comic Book', icon: '📚', promptPrefix: 'Retro Comic Book Style, Halftone Dots, Vintage Color Palette, Classic Pop Art Graphic Novel' },
-            { id: 'watercolor', label: 'Watercolor Concept', icon: '🖌️', promptPrefix: 'Watercolor Concept Art, Artistic Brush Strokes, Soft Pastel Color Palette, Storybook Painting, Fluid Inks' },
-            { id: 'cinematic_film', label: 'Cinematic Film', icon: '🎬', promptPrefix: 'Cinematic Film Stills, 35mm Movie Shot, Dynamic Atmospheric Lighting, Moody Composition, Anamorphic Lens' }
+          { id: 'realistic', label: 'Realistik Fotografi', icon: '📷', promptPrefix: 'Realistic Photographic, ultra detailed studio photography, photorealistic, dramatic natural lighting, 8k resolution' },
+          { id: 'flat_vector', label: 'Modern Flat Vector', icon: '🎨', promptPrefix: 'Modern Educational Animation, Flat Illustration, Clean Vector Art, Kok Bisa Style, vibrant palette' },
+          { id: 'pixar_3d', label: '3D Animation (Pixar)', icon: '✨', promptPrefix: '3D Character Animation, Pixar Visual Style, Expressive 3D render, Vibrant Cinema 4D Lighting' },
+          { id: 'anime', label: 'Anime Manga Keyframe', icon: '🌸', promptPrefix: 'Anime Keyframe Art, Japanese Animation Style, Makoto Shinkai aesthetic, vivid cell shading, dramatic anime lighting' },
+          { id: 'sketch', label: 'Cinematic Sketch', icon: '✏️', promptPrefix: 'Cinematic Concept Sketch, Hand-drawn Storyboard Art, Pencil & Ink Line Art, Expressive Hatching, Graphic Concept' },
+          { id: 'retro_comic', label: 'Retro Comic Book', icon: '📚', promptPrefix: 'Retro Comic Book Style, Halftone Dots, Vintage Color Palette, Classic Pop Art Graphic Novel' },
+          { id: 'watercolor', label: 'Watercolor Concept', icon: '🖌️', promptPrefix: 'Watercolor Concept Art, Artistic Brush Strokes, Soft Pastel Color Palette, Storybook Painting, Fluid Inks' },
+          { id: 'cinematic_film', label: 'Cinematic Film', icon: '🎬', promptPrefix: 'Cinematic Film Stills, 35mm Movie Shot, Dynamic Atmospheric Lighting, Moody Composition, Anamorphic Lens' }
         ];
 
-        const CREATE_EMPTY_PROJECT = () => ({
-            id: `session-${Date.now()}`,
-            title: "Topik Edukasi Baru",
-            format: "16:9",
-            category: "Fakta Unik & Anomali Dunia",
-            mode: "Sedang Viral (Trending Google)",
-            currentStep: 1,
-            step1Data: { selectedTopic: "", selectedReason: "", topics: [] },
-            step2Data: { targetDuration: "10-15 Menit", customInstruction: "", wordCount: 0, estimatedDuration: "0 Menit", script: "" },
-            step3Data: { selectedStyleId: "flat_vector", visualStyle: VISUAL_STYLES[1].promptPrefix, prompts: [] },
-            step4Data: { animationStyle: "Animasi lambat, transisi mulus, pergerakan kamera sinematik", videoPrompts: [] },
-            step5Data: { selectedTextOption: "", readyPrompt: "" },
-            step6Data: { seoTitles: [], videoDescription: "", seoKeywords: "", pinnedComment: "" }
-        });
+        async function callGeminiAPI(prompt, apiKey, systemInstruction, useSearch = false) {
+          const keyToUse = apiKey && apiKey.trim() !== "" ? apiKey.trim() : DEFAULT_GEMINI_KEY;
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${keyToUse}`;
 
-        // Global State
-        let project = CREATE_EMPTY_PROJECT();
-        let activeTab = 'editor';
-        let apiKey = DEFAULT_GEMINI_KEY;
-        let groundingSources = [];
-        let imagePreviews = {};
-        let loadingImageId = null;
+          const requestBody = {
+            contents: [{ role: "user", parts: [{ text: prompt }] }]
+          };
 
-        // UI Helpers
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const icon = document.getElementById('toast-icon');
-            const msg = document.getElementById('toast-message');
-            
-            toast.className = 'fixed bottom-5 right-5 z-50 flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold transform transition-all duration-300';
-            msg.textContent = message;
+          if (systemInstruction) {
+            requestBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+          }
 
-            if (type === 'success') {
-                toast.classList.add('bg-emerald-900', 'text-emerald-100', 'border-emerald-700');
-                icon.setAttribute('data-lucide', 'check-circle-2');
-                icon.classList.add('text-emerald-400');
-            } else if (type === 'error') {
-                toast.classList.add('bg-red-900', 'text-red-100', 'border-red-700');
-                icon.setAttribute('data-lucide', 'alert-circle');
-                icon.classList.add('text-amber-400');
-            } else {
-                toast.classList.add('bg-slate-900', 'text-white', 'border-slate-700');
-                icon.setAttribute('data-lucide', 'info');
-                icon.classList.add('text-blue-400');
-            }
-            lucide.createIcons();
-            
-            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
-            setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
-                setTimeout(() => {
-                    toast.classList.remove('bg-emerald-900', 'text-emerald-100', 'border-emerald-700', 'bg-red-900', 'text-red-100', 'border-red-700', 'bg-slate-900', 'text-white', 'border-slate-700');
-                }, 300);
-            }, 3500);
+          if (useSearch) {
+            requestBody.tools = [{ googleSearch: {} }];
+          }
+
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody)
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error?.message || `Gemini API Error: ${response.status}`);
+          }
+
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          
+          let sources = [];
+          const groundingChunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks;
+          if (groundingChunks && Array.isArray(groundingChunks)) {
+            sources = groundingChunks
+              .filter(chunk => chunk.web)
+              .map(chunk => ({
+                title: chunk.web.title || chunk.web.uri,
+                uri: chunk.web.uri
+              }));
+          }
+
+          return { text, sources };
         }
 
-        async function copyToClipboard(text, label = "Teks") {
-            if (!text) {
-                showToast("Tidak ada teks untuk disalin", "error");
-                return;
+        async function generateImagePreview(prompt, apiKey, aspectRatio = "16:9") {
+          const keyToUse = apiKey && apiKey.trim() !== "" ? apiKey.trim() : DEFAULT_GEMINI_KEY;
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${keyToUse}`;
+          
+          const payload = {
+            instances: [{ prompt: prompt }],
+            parameters: { 
+              sampleCount: 1,
+              aspectRatio: aspectRatio === "9:16" ? "9:16" : "16:9"
             }
+          };
+
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            throw new Error(`Imagen API Error: ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+            return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+          }
+          throw new Error("Gagal memperoleh gambar dari Imagen API");
+        }
+
+        function parseScriptToVisualPrompts(scriptText, visualStyle = VISUAL_STYLES[1].promptPrefix, aspectFormat = "16:9") {
+          if (!scriptText || scriptText.trim().length === 0) return [];
+
+          const paragraphs = scriptText
+            .split(/\n\s*\n/)
+            .map(p => p.trim())
+            .filter(p => p.length > 20);
+
+          if (paragraphs.length === 0) return [];
+
+          const scenes = [];
+          const ratioDescription = aspectFormat === "9:16" 
+            ? "9:16 vertical mobile aspect ratio, vertical portrait composition, full screen phone view" 
+            : "16:9 widescreen landscape ratio, horizontal YouTube format";
+
+          paragraphs.forEach((chunk, i) => {
+            const sceneIndex = i + 1;
+            const sceneNum = String(sceneIndex).padStart(3, '0');
+            const contextSnippet = chunk.substring(0, 120) + (chunk.length > 120 ? "..." : "");
+            const cleanSceneConcept = chunk.replace(/Begitu kamu|Lalu,|Di sini,|Nah,|Tahukah kamu|Sebab,/gi, '').trim();
+
+            scenes.push({
+              id: `img-${sceneIndex}`,
+              sceneNum,
+              context: `Adegan ${sceneIndex}: ${contextSnippet}`,
+              prompt: `${visualStyle}. Detailed concept scene illustration of: ${cleanSceneConcept.substring(0, 150)}. Cinematic framing, expressive storytelling visual, vivid details, ${ratioDescription}.`
+            });
+          });
+
+          return scenes;
+        }
+
+        function parseScriptToSEO(scriptText, topicTitle) {
+          const cleanTitle = topicTitle && topicTitle.trim() !== "" ? topicTitle : "Topik Edukasi Sains";
+
+          return {
+            seoTitles: [
+              `${cleanTitle} (Penjelasan Lengkap & Alur Cerita)`,
+              `Sains Di Balik ${cleanTitle}: Rahasia Yang Jarang Orang Tahu`,
+              `Bagaimana Proses ${cleanTitle}? (Kisah Narasi Edukasi)`,
+              `Kisah Menakjubkan: ${cleanTitle}`,
+              `Apa Yang Sebenarnya Terjadi Pada ${cleanTitle}?`
+            ],
+            videoDescription: `Pernahkah kamu penasaran bagaimana fenomena di balik ${cleanTitle}?\n\nDalam video animasi edukasi kali ini, kita akan menyusuri alur cerita naratif alami mulai dari fakta sejarah, rahasia sains, hingga refleksi mendalam!\n\nSimak alur ceritanya sampai habis ya!\n\nJangan lupa Like, Subscribe, dan share video edukasi ini ke teman-temanmu!`,
+            seoKeywords: `${cleanTitle.toLowerCase()}, sains indonesia, edukasi animasi, cerita sains, kok bisa, alur cerita narasi, fakta unik, fenomena alam`,
+            youtubeTags: [cleanTitle.toLowerCase(), "sains", "edukasi", "cerita animasi", "kok bisa", "storytelling", "youtube long form", "fakta unik"],
+            hashtags: `#Sains #Edukasi #Storytelling #KokBisa #${cleanTitle.replace(/[^a-zA-Z0-9]/g, '')}`,
+            pinnedComment: `Bagian alur cerita mana dari ${cleanTitle} yang paling berkesan buat kamu? Tulis di kolom komentar ya! 👇`
+          };
+        }
+
+        const CREATE_EMPTY_PROJECT = () => ({
+          id: `session-${Date.now()}`,
+          title: "Topik Edukasi Baru",
+          format: "16:9",
+          category: "Fakta Unik & Anomali Dunia",
+          mode: "Sedang Viral (Trending Google)",
+          targetAudience: "Remaja & Dewasa Muda (15-30 tahun)",
+          style: "Edukasi Naratif Santai & Menarik",
+          language: "Bahasa Indonesia",
+          currentStep: 1,
+          updatedAt: new Date().toISOString(),
+          step1Data: { selectedTopic: "", selectedReason: "", topics: [] },
+          step2Data: { targetDuration: "10-15 Menit", customInstruction: "", wordCount: 0, estimatedDuration: "0 Menit", script: "" },
+          step3Data: { selectedStyleId: "flat_vector", visualStyle: VISUAL_STYLES[1].promptPrefix, prompts: [] },
+          step4Data: { animationStyle: "Animasi lambat, transisi mulus, pergerakan kamera sinematik", videoPrompts: [] },
+          step5Data: { ctrAnalysis: "", selectedTextOption: "", textOptions: [], visualConcept: "", readyPrompt: "" },
+          step6Data: { seoTitles: [], videoDescription: "", seoKeywords: "", youtubeTags: [], hashtags: "", pinnedComment: "" }
+        });
+
+        function App() {
+          const [activeTab, setActiveTab] = React.useState('editor');
+          const [project, setProject] = React.useState(CREATE_EMPTY_PROJECT);
+          const [apiKey, setApiKey] = React.useState(DEFAULT_GEMINI_KEY);
+          
+          const [isGenerating, setIsGenerating] = React.useState(false);
+          const [loadingStepText, setLoadingStepText] = React.useState('');
+          const [toast, setToast] = React.useState(null);
+          const [groundingSources, setGroundingSources] = React.useState([]);
+          
+          const [imagePreviews, setImagePreviews] = React.useState({});
+          const [loadingImageId, setLoadingImageId] = React.useState(null);
+          const [showResetConfirm, setShowResetConfirm] = React.useState(false);
+
+          const showToast = (message, type = 'info') => {
+            setToast({ message, type });
+            setTimeout(() => setToast(null), 3500);
+          };
+
+          const copyToClipboard = async (text, label = "Teks") => {
+            if (!text) {
+              showToast("Tidak ada teks untuk disalin", "error");
+              return;
+            }
+
+            let success = false;
             try {
+              if (navigator.clipboard && window.isSecureContext) {
                 await navigator.clipboard.writeText(text);
-                showToast(`${label} berhasil disalin!`, "success");
+                success = true;
+              }
             } catch (err) {
+              console.warn("Clipboard API error, fallback...", err);
+            }
+
+            if (!success) {
+              try {
                 const textArea = document.createElement("textarea");
                 textArea.value = text;
                 textArea.style.position = "fixed";
                 textArea.style.left = "-999999px";
+                textArea.style.top = "-999999px";
                 document.body.appendChild(textArea);
+                textArea.focus();
                 textArea.select();
-                const success = document.execCommand('copy');
+                success = document.execCommand('copy');
                 document.body.removeChild(textArea);
-                if (success) showToast(`${label} berhasil disalin!`, "success");
-                else showToast(`Gagal menyalin ${label}.`, "error");
+              } catch (err) {
+                console.error("Fallback copy failed:", err);
+              }
             }
-        }
 
-        function setLoading(isLoading, text = "") {
-            const overlay = document.getElementById('loading-overlay');
-            document.getElementById('loading-text').textContent = text;
-            if (isLoading) overlay.classList.remove('hidden');
-            else overlay.classList.add('hidden');
-        }
-
-        function parseScriptToVisualPrompts(scriptText, visualStyle, aspectFormat) {
-            if (!scriptText || scriptText.trim().length === 0) return [];
-            const paragraphs = scriptText.split(/\n\s*\n/).map(p => p.trim()).filter(p => p.length > 25);
-            if (paragraphs.length === 0) return [];
-
-            const maxScenes = aspectFormat === "9:16" ? 6 : 8;
-            const groupSize = Math.max(1, Math.ceil(paragraphs.length / maxScenes));
-            const scenes = [];
-            const ratioDesc = aspectFormat === "9:16" ? "9:16 vertical mobile aspect ratio, vertical portrait composition" : "16:9 widescreen landscape ratio";
-
-            for (let i = 0; i < paragraphs.length; i += groupSize) {
-                const chunk = paragraphs.slice(i, i + groupSize).join(" ");
-                const sceneIndex = scenes.length + 1;
-                scenes.push({
-                    id: `img-${sceneIndex}`,
-                    sceneNum: String(sceneIndex).padStart(3, '0'),
-                    context: `Adegan ${sceneIndex}: ${chunk.substring(0, 110)}...`,
-                    prompt: `${visualStyle}. Scene ${sceneIndex} representation: ${chunk.substring(0, 140)}. Vivid color composition, ${ratioDesc}.`
-                });
+            if (success) {
+              showToast(`${label} berhasil disalin!`, "success");
+            } else {
+              showToast(`Gagal menyalin ${label}. Silakan salin secara manual.`, "error");
             }
-            return scenes;
-        }
+          };
 
-        function parseScriptToSEO(scriptText, topicTitle) {
-            const cleanTitle = topicTitle && topicTitle.trim() !== "" ? topicTitle : "Topik Edukasi Sains";
-            return {
-                seoTitles: [
-                    `${cleanTitle} (Penjelasan Lengkap & Alur Cerita)`,
-                    `Sains Di Balik ${cleanTitle}: Rahasia Yang Jarang Orang Tahu`,
-                    `Bagaimana Proses ${cleanTitle}? (Kisah Narasi Edukasi)`,
-                    `Kisah Menakjubkan: ${cleanTitle}`,
-                    `Apa Yang Sebenarnya Terjadi Pada ${cleanTitle}?`
-                ],
-                videoDescription: `Pernahkah kamu penasaran bagaimana fenomena di balik ${cleanTitle}?\n\nDalam video animasi edukasi kali ini, kita akan menyusuri alur cerita naratif alami mulai dari fakta sejarah, rahasia sains, hingga refleksi mendalam!\n\nJangan lupa Like, Subscribe, dan share video edukasi ini!`,
-                seoKeywords: `${cleanTitle.toLowerCase()}, sains indonesia, edukasi animasi, cerita sains, kok bisa, alur cerita narasi`,
-                pinnedComment: `Bagian alur cerita mana dari ${cleanTitle} yang paling berkesan buat kamu? Tulis di kolom komentar ya! 👇`
-            };
-        }
-
-        function syncAllStepsWithScript() {
-            const format = project.format;
-            const script = project.step2Data.script;
-            const title = project.title;
-            const style = project.step3Data.visualStyle;
-
-            project.step3Data.prompts = parseScriptToVisualPrompts(script, style, format);
+          const syncAllStepsWithScript = (scriptText, title, visualStyle, format = project.format) => {
+            const generatedVisualPrompts = parseScriptToVisualPrompts(scriptText, visualStyle, format);
             
-            const motionStyle = format === "9:16" 
-                ? "Vertical dynamic camera tilt and slow vertical pan. Smooth mobile-optimized 2D animation"
-                : "Slow horizontal camera movement. Cinematic smooth 2D widescreen vector animation";
+            const motionStyle = format === "9:16"
+              ? "Vertical dynamic camera tilt and slow vertical pan. Smooth mobile-optimized 2D animation"
+              : "Slow horizontal camera movement. Cinematic smooth 2D widescreen vector animation";
 
-            project.step4Data.videoPrompts = project.step3Data.prompts.map(vp => ({
-                id: `vid-${vp.id}`,
-                sceneNum: vp.sceneNum,
-                prompt: `${motionStyle} of: ${vp.context}. High resolution, 60fps style, ${format} orientation.`
+            const generatedVideoPrompts = generatedVisualPrompts.map((vp) => ({
+              id: `vid-${vp.id}`,
+              sceneNum: vp.sceneNum,
+              prompt: `${motionStyle} of: ${vp.context}. High resolution, 60fps style, ${format} orientation.`
             }));
 
-            const seo = parseScriptToSEO(script, title);
-            project.step6Data = { ...project.step6Data, ...seo };
+            const seoData = parseScriptToSEO(scriptText, title);
 
-            const selectedText = project.step5Data.selectedTextOption || title || "Judul Thumbnail Menarik";
-            project.step5Data.readyPrompt = format === "9:16" 
-                ? `A high-quality 9:16 vertical cover frame for YouTube Shorts in ${style} visual style. [TOPIC]: ${title}. [MAIN CHARACTER]: Expressive focus. [TYPOGRAPHY]: Large bold vertical stacked text '${selectedText}'. High contrast, 9:16 ratio.`
-                : `A high-quality 16:9 widescreen YouTube thumbnail in ${style} visual style. [TOPIC]: ${title}. [MAIN CHARACTER]: Expression of wonder. [TYPOGRAPHY]: Large clear headline text '${selectedText}'. High contrast, 16:9 ratio.`;
-            
-            renderAllSteps();
-        }
+            setProject(prev => {
+              const selectedText = prev.step5Data.selectedTextOption || title || "Judul Thumbnail Menarik";
+              
+              const readyPrompt = format === "9:16" 
+                ? `A high-quality 9:16 vertical cover frame for YouTube Shorts / TikTok in ${visualStyle} visual style. [TOPIC]: ${title || 'Edukasi Sains'}. [MAIN CHARACTER]: Expressive focus in center portrait. [TYPOGRAPHY]: Large bold vertical stacked text '${selectedText}'. High contrast, 9:16 vertical ratio.`
+                : `A high-quality 16:9 widescreen YouTube thumbnail in ${visualStyle} visual style. [TOPIC]: ${title || 'Edukasi Sains'}. [MAIN CHARACTER]: Expression of wonder or surprise. [TYPOGRAPHY]: Large clear headline text '${selectedText}'. High contrast, 16:9 ratio.`;
 
-        async function callGeminiAPI(prompt, systemInstruction, useSearch = false) {
-            const keyToUse = apiKey.trim() || DEFAULT_GEMINI_KEY;
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${keyToUse}`;
-            
-            const reqBody = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
-            if (systemInstruction) reqBody.systemInstruction = { parts: [{ text: systemInstruction }] };
-            if (useSearch) reqBody.tools = [{ googleSearch: {} }];
-
-            const res = await fetch(endpoint, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(reqBody) });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                throw new Error(err.error?.message || `API Error: ${res.status}`);
-            }
-            
-            const data = await res.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-            let sources = [];
-            const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks;
-            if (chunks) sources = chunks.filter(c => c.web).map(c => ({ title: c.web.title || c.web.uri, uri: c.web.uri }));
-            return { text, sources };
-        }
-
-        async function generateImagePreview(prompt, formatStr) {
-            const keyToUse = apiKey.trim() || DEFAULT_GEMINI_KEY;
-            const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${keyToUse}`;
-            const payload = { instances: [{ prompt }], parameters: { sampleCount: 1, aspectRatio: formatStr } };
-            
-            const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            if (!res.ok) throw new Error("Gagal memperoleh gambar dari API");
-            
-            const result = await res.json();
-            if (result.predictions?.[0]?.bytesBase64Encoded) {
-                return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-            }
-            throw new Error("Format gambar tidak valid.");
-        }
-
-        function updateNavigation() {
-            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
-                if (btn.dataset.target === activeTab) {
-                    btn.className = 'nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition bg-blue-50 text-blue-700 font-semibold';
-                    btn.querySelector('i').className = 'w-4 h-4 text-blue-600';
-                } else {
-                    btn.className = 'nav-tab-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 hover:bg-slate-100';
-                    btn.querySelector('i').className = 'w-4 h-4 text-slate-500';
-                }
+              return {
+                ...prev,
+                step3Data: { ...prev.step3Data, prompts: generatedVisualPrompts },
+                step4Data: { ...prev.step4Data, videoPrompts: generatedVideoPrompts },
+                step5Data: { ...prev.step5Data, readyPrompt },
+                step6Data: { ...prev.step6Data, ...seoData }
+              };
             });
-            document.getElementById('view-editor').style.display = activeTab === 'editor' ? 'block' : 'none';
-            document.getElementById('view-settings').style.display = activeTab === 'settings' ? 'block' : 'none';
-            lucide.createIcons();
-        }
+          };
 
-        function setStep(step) {
-            project.currentStep = step;
-            document.querySelectorAll('.step-view').forEach((el, idx) => {
-                el.style.display = (idx + 1 === step) ? 'block' : 'none';
-            });
-            renderStepper();
-            document.getElementById('sidebar-step-info').textContent = `Step ${step} dari 6`;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
+          const setStep = (stepNumber) => {
+            setProject(prev => ({ ...prev, currentStep: stepNumber }));
+          };
 
-        function renderStepper() {
-            const steps = [
-                { num: 1, label: 'Tren Google', icon: 'search' },
-                { num: 2, label: 'Naskah Narasi', icon: 'file-text' },
-                { num: 3, label: 'Visual Prompts', icon: 'image' },
-                { num: 4, label: 'Video Motion', icon: 'video' },
-                { num: 5, label: 'Thumbnail Studio', icon: 'image' },
-                { num: 6, label: 'YouTube SEO', icon: 'tag' },
-            ];
-            const container = document.getElementById('stepper-container');
-            container.innerHTML = steps.map((s, idx) => {
-                const isActive = project.currentStep === s.num;
-                const isPassed = project.currentStep > s.num;
-                
-                let btnClass = isActive ? 'bg-blue-600 text-white font-semibold shadow-sm' : 
-                               isPassed ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium' : 
-                               'text-slate-500 hover:bg-slate-100';
-                let circleClass = isActive ? 'bg-white text-blue-600 font-bold' : 
-                                  isPassed ? 'bg-blue-200 text-blue-800' : 
-                                  'bg-slate-200 text-slate-600';
-                
-                let html = `<button onclick="setStep(${s.num})" class="flex items-center space-x-2 px-3 py-2 rounded-xl text-xs transition ${btnClass}">
-                    <div class="w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${circleClass}">
-                        ${isPassed ? `<i data-lucide="check" class="w-3 h-3"></i>` : s.num}
-                    </div>
-                    <span class="whitespace-nowrap">${s.label}</span>
-                </button>`;
-                
-                if (idx < 5) html += `<i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 flex-shrink-0"></i>`;
-                return html;
-            }).join('');
-            lucide.createIcons();
-        }
+          const handleGenerateTopics = async (category, mode) => {
+            setIsGenerating(true);
+            setLoadingStepText("Mencari tren terbaru di Google Search & menganalisis ide topik viral...");
+            setGroundingSources([]);
 
-        function renderAllSteps() {
-            // Sidebar
-            document.getElementById('sidebar-topic-title').textContent = project.title || "Topik Belum Dipilih";
+            const sysPrompt = "Anda adalah AI Content Strategist untuk channel animasi edukasi terpopuler (seperti Kok Bisa / Kurzgesagt). Tugas Anda adalah mencari tren Google terbaru dan memberikan ide topik edukasi sains/pengetahuan yang sedang banyak dicari orang.";
+            const userPrompt = `Gunakan pencarian Google Search untuk menemukan ide-ide topik yang SEDANG TRENDING & VIRAL di internet saat ini mengenai kategori: "${category}" dengan sudut pandang/mode: "${mode}".
             
-            // Step 1
-            document.getElementById('btn-format-16-9').className = `format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${project.format === '16:9' ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-white'}`;
-            document.getElementById('btn-format-16-9').firstElementChild.className = `w-9 h-6 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[9px] mt-0.5 ${project.format === '16:9' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'}`;
-            
-            document.getElementById('btn-format-9-16').className = `format-btn p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${project.format === '9:16' ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' : 'bg-slate-50 border-slate-200 hover:bg-white'}`;
-            document.getElementById('btn-format-9-16').firstElementChild.className = `w-5 h-8 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[8px] ${project.format === '9:16' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'}`;
+            Buat 6 rekomendasi ide topik pilihan terbaik yang sempurna dan paling diminati penonton saat ini.
+            Format respons harus HANYA berupa JSON Array murni tanpa penjelasan tambahan, dengan atribut:
+            - title: judul topik yang sangat menarik dan membuat penasaran
+            - reason: penjelasan kenapa topik ini sedang trending dan cocok dibuat cerita long-form
+            - score: angka 1 sampai 5
+            - badge: contoh "Trending Google #1"
+            - recommendedDuration: durasi ideal yang disarankan untuk topik ini (contoh: "45 Detik" atau "12 Menit")`;
 
-            if(document.activeElement !== document.getElementById('input-title')) document.getElementById('input-title').value = project.title;
-            document.getElementById('select-category').value = project.category;
-            document.getElementById('select-mode').value = project.mode;
-
-            // Step 1: Topics Grid
-            const tGrid = document.getElementById('topics-grid-container');
-            document.getElementById('topics-count-label').textContent = `Rekomendasi Topik Trending (${project.step1Data.topics.length})`;
-            if (project.step1Data.topics.length === 0) {
-                tGrid.innerHTML = `
-                    <div class="col-span-1 md:col-span-2 text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                        <i data-lucide="search" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
-                        <p class="text-xs font-medium text-slate-600">Belum ada topik yang ditemukan.</p>
-                        <p class="text-[11px] text-slate-400 mt-0.5">Klik "Cari Tren Google" di atas atau ketik judul Anda secara langsung.</p>
-                    </div>`;
-            } else {
-                tGrid.innerHTML = project.step1Data.topics.map((t, idx) => {
-                    const isSelected = project.step1Data.selectedTopic === t.title;
-                    const btnClass = isSelected ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200';
-                    const cardClass = isSelected ? 'bg-blue-50/70 border-blue-500 shadow-sm ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:border-slate-300';
-                    return `
-                        <div class="p-4 rounded-2xl border transition flex flex-col justify-between ${cardClass}">
-                            <div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">${t.badge || `Trending #${idx + 1}`}</span>
-                                </div>
-                                <h4 class="font-bold text-slate-900 text-sm mb-1">${t.title}</h4>
-                                <p class="text-xs text-slate-500 mb-3">${t.reason}</p>
-                            </div>
-                            <button onclick="selectTopic(${idx})" class="w-full text-xs font-semibold py-2 rounded-xl border transition ${btnClass}">
-                                ${isSelected ? '✓ Topik Terpilih' : 'Gunakan Topik Ini'}
-                            </button>
-                        </div>`;
-                }).join('');
-            }
-
-            // Step 1: Grounding
-            const gContainer = document.getElementById('grounding-sources-container');
-            const gList = document.getElementById('grounding-sources-list');
-            if (groundingSources.length > 0) {
-                gContainer.classList.remove('hidden');
-                gList.innerHTML = groundingSources.map(src => `
-                    <a href="${src.uri}" target="_blank" class="bg-white border border-slate-200 hover:border-blue-300 text-blue-600 px-2.5 py-1 rounded-lg text-[11px] flex items-center space-x-1">
-                        <span class="line-clamp-1 max-w-[150px]">${src.title}</span><i data-lucide="external-link" class="w-2.5 h-2.5"></i>
-                    </a>
-                `).join('');
-            } else {
-                gContainer.classList.add('hidden');
-            }
-
-            // Step 2
-            document.getElementById('lbl-script-category').textContent = project.category;
-            document.getElementById('lbl-script-topic').textContent = project.step1Data.selectedTopic || project.title || "Belum ada topik terpilih";
-            if(document.activeElement !== document.getElementById('input-duration')) document.getElementById('input-duration').value = project.step2Data.targetDuration;
-            
-            const presets = project.format === '9:16' ? ['30 Detik', '45 Detik', '60 Detik (Shorts)', '90 Detik'] : ['5-8 Menit', '8-10 Menit', '10-15 Menit', '15-20 Menit'];
-            document.getElementById('duration-presets').innerHTML = `<span class="text-[10px] text-slate-400 font-medium mr-0.5">Pilihan Cepat:</span>` + 
-                presets.map(dur => `<button onclick="setDuration('${dur}')" class="text-[10px] px-2 py-0.5 rounded-lg border transition ${project.step2Data.targetDuration === dur ? 'bg-blue-600 text-white border-blue-600 font-semibold' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'}">${dur}</button>`).join('');
-
-            if(document.activeElement !== document.getElementById('input-custom-instruction')) document.getElementById('input-custom-instruction').value = project.step2Data.customInstruction;
-            if(document.activeElement !== document.getElementById('textarea-script')) document.getElementById('textarea-script').value = project.step2Data.script;
-            document.getElementById('lbl-word-count').textContent = project.step2Data.wordCount;
-            document.getElementById('lbl-est-duration').textContent = project.step2Data.estimatedDuration;
-
-            // Step 3
-            document.getElementById('visual-styles-grid').innerHTML = VISUAL_STYLES.map(s => {
-                const isSelected = project.step3Data.selectedStyleId === s.id;
-                const cls = isSelected ? 'bg-[#fcf8f2] border-[#cbb387] text-amber-950 font-bold shadow-sm ring-1 ring-[#cbb387]' : 'bg-white border-slate-200 text-slate-700 hover:border-[#e6dcc8] hover:bg-[#faf7f2]';
-                return `<button onclick="setStyle('${s.id}')" class="px-4 py-3.5 rounded-2xl border text-left transition flex items-center space-x-3 text-xs font-medium cursor-pointer ${cls}"><span class="text-lg leading-none">${s.icon}</span><span>${s.label}</span></button>`;
-            }).join('');
-
-            document.getElementById('lbl-prompts-count').textContent = `Daftar Scene Prompts (${project.step3Data.prompts.length})`;
-            if (project.step3Data.prompts.length > 0) {
-                document.getElementById('visual-prompts-container').innerHTML = project.step3Data.prompts.map((p, i) => `
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
-                        <div class="flex-1 space-y-2">
-                            <div class="flex items-center justify-between">
-                                <span class="bg-slate-100 text-slate-600 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase border border-slate-200">Scene ${p.sceneNum}</span>
-                                <button onclick="copyToClipboard(document.getElementById('vp-${i}').value, 'Prompt Scene ${p.sceneNum}')" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
-                            </div>
-                            <p class="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg italic">"${p.context}"</p>
-                            <textarea id="vp-${i}" onchange="updatePrompt('vp', ${i}, this.value)" class="w-full text-xs font-mono bg-slate-900 text-green-400 border border-slate-800 rounded-xl p-3 focus:ring-1 focus:ring-blue-500 outline-none leading-relaxed" rows="4">${p.prompt}</textarea>
-                        </div>
-                        <div class="md:w-48 flex-shrink-0 flex flex-col items-center justify-center space-y-2">
-                            ${imagePreviews[p.id] ? `<img src="${imagePreviews[p.id]}" class="w-full bg-slate-200 rounded-xl object-cover shadow-sm border border-slate-200 aspect-video">` : `<div class="w-full bg-slate-100 rounded-xl border border-dashed border-slate-300 flex items-center justify-center aspect-video"><i data-lucide="image" class="w-6 h-6 text-slate-300"></i></div>`}
-                            <button onclick="previewImage('${p.id}', ${i})" ${loadingImageId === p.id ? 'disabled' : ''} class="text-[10px] w-full font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 px-2 py-1.5 rounded-lg flex items-center justify-center space-x-1 transition disabled:opacity-50">
-                                ${loadingImageId === p.id ? `<i data-lucide="refresh-cw" class="w-3 h-3 animate-spin"></i><span>Generating...</span>` : `<i data-lucide="sparkles" class="w-3 h-3 text-amber-500"></i><span>Preview Imagen</span>`}
-                            </button>
-                        </div>
-                    </div>`).join('');
-            }
-
-            // Step 4
-            if(document.activeElement !== document.getElementById('input-anim-style')) document.getElementById('input-anim-style').value = project.step4Data.animationStyle;
-            document.getElementById('lbl-video-prompts-count').textContent = `Daftar Video Motion Prompts (${project.step4Data.videoPrompts.length})`;
-            if (project.step4Data.videoPrompts.length > 0) {
-                document.getElementById('video-prompts-container').innerHTML = project.step4Data.videoPrompts.map((p, i) => `
-                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-2">
-                        <div class="flex items-center justify-between">
-                            <span class="bg-slate-100 text-slate-600 font-bold text-[10px] px-2 py-0.5 rounded-full uppercase border border-slate-200">Motion Scene ${p.sceneNum}</span>
-                            <button onclick="copyToClipboard(document.getElementById('vidp-${i}').value, 'Video Prompt Scene ${p.sceneNum}')" class="text-[11px] font-medium text-blue-600 hover:text-blue-800 flex items-center space-x-1"><i data-lucide="copy" class="w-3 h-3"></i><span>Salin</span></button>
-                        </div>
-                        <textarea id="vidp-${i}" onchange="updatePrompt('vidp', ${i}, this.value)" class="w-full text-xs font-mono bg-slate-900 text-blue-400 border border-slate-800 rounded-xl p-3 outline-none leading-relaxed" rows="2">${p.prompt}</textarea>
-                    </div>`).join('');
-            }
-
-            // Step 5
-            if(document.activeElement !== document.getElementById('input-cover-text')) document.getElementById('input-cover-text').value = project.step5Data.selectedTextOption || project.title;
-            if(document.activeElement !== document.getElementById('textarea-cover-prompt')) document.getElementById('textarea-cover-prompt').value = project.step5Data.readyPrompt;
-
-            // Step 6
-            if (project.step6Data.seoTitles.length > 0) {
-                document.getElementById('seo-titles-container').innerHTML = project.step6Data.seoTitles.map((t, i) => `
-                    <div class="flex items-center justify-between group">
-                        <span class="text-xs font-semibold text-slate-800">${i+1}. ${t}</span>
-                        <button onclick="copyToClipboard('${t.replace(/'/g, "\\'")}', 'Judul')" class="opacity-0 group-hover:opacity-100 transition text-[10px] text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md hover:bg-slate-100">Salin</button>
-                    </div>`).join('');
-            }
-            if(document.activeElement !== document.getElementById('textarea-seo-desc')) document.getElementById('textarea-seo-desc').value = project.step6Data.videoDescription;
-            if(document.activeElement !== document.getElementById('textarea-seo-tags')) document.getElementById('textarea-seo-tags').value = project.step6Data.seoKeywords;
-            if(document.activeElement !== document.getElementById('textarea-seo-pin')) document.getElementById('textarea-seo-pin').value = project.step6Data.pinnedComment;
-
-            lucide.createIcons();
-        }
-
-        // Action Handlers
-        window.selectTopic = (idx) => {
-            const t = project.step1Data.topics[idx];
-            const dur = t.recommendedDuration || (project.format === '9:16' ? "30-60 Detik (Shorts)" : "10-15 Menit");
-            project.title = t.title;
-            project.step1Data.selectedTopic = t.title;
-            project.step1Data.selectedReason = t.reason;
-            project.step2Data.targetDuration = dur;
-            renderAllSteps();
-            showToast(`Topik dipilih: ${t.title}`, "info");
-        };
-
-        window.setDuration = (dur) => { project.step2Data.targetDuration = dur; renderAllSteps(); };
-        window.setStyle = (id) => { 
-            const s = VISUAL_STYLES.find(x => x.id === id);
-            project.step3Data.selectedStyleId = id; 
-            project.step3Data.visualStyle = s.promptPrefix; 
-            syncAllStepsWithScript(); 
-            showToast(`Gaya visual diubah: ${s.label}`, "info");
-        };
-        window.updatePrompt = (type, idx, val) => {
-            if (type === 'vp') project.step3Data.prompts[idx].prompt = val;
-            if (type === 'vidp') project.step4Data.videoPrompts[idx].prompt = val;
-        };
-
-        window.previewImage = async (promptId, idx) => {
-            const p = project.step3Data.prompts[idx].prompt;
-            loadingImageId = promptId;
-            renderAllSteps();
             try {
-                const img = await generateImagePreview(p, project.format);
-                imagePreviews[promptId] = img;
-                showToast("Preview gambar AI berhasil dibuat!", "success");
+              const { text, sources } = await callGeminiAPI(userPrompt, apiKey, sysPrompt, true);
+              setGroundingSources(sources || []);
+
+              const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+              let parsedTopics = [];
+              try {
+                parsedTopics = JSON.parse(cleanJson);
+              } catch (e) {
+                const jsonMatch = cleanJson.match(/\[.*\]/s);
+                if (jsonMatch) {
+                  parsedTopics = JSON.parse(jsonMatch[0]);
+                } else {
+                  throw new Error("Gagal menguraikan format topik.");
+                }
+              }
+
+              const formattedTopics = parsedTopics.map((t, idx) => ({
+                ...t,
+                id: `topic-${Date.now()}-${idx}`
+              }));
+
+              setProject(prev => ({
+                ...prev,
+                category,
+                mode,
+                step1Data: {
+                  ...prev.step1Data,
+                  topics: formattedTopics
+                }
+              }));
+              showToast("Berhasil menemukan ide topik trending dari Google Search!", "success");
             } catch (err) {
-                showToast("Gagal membuat preview gambar. Cek API Key.", "error");
+              console.error(err);
+              showToast("Gagal mencari tren Google. Pastikan koneksi internet terhubung.", "error");
             } finally {
-                loadingImageId = null;
-                renderAllSteps();
+              setIsGenerating(false);
             }
-        };
+          };
 
-        window.handleCreateNewProject = () => document.getElementById('reset-modal').classList.remove('hidden');
+          const handleGenerateScript = async (customInst, targetDuration = "10-15 Menit") => {
+            const topic = project.step1Data.selectedTopic || project.title;
+            if (!topic || topic.trim() === "" || topic === "Topik Edukasi Baru") {
+              showToast("Silakan pilih atau ketik judul topik terlebih dahulu di Step 1!", "error");
+              return;
+            }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            renderStepper();
-            renderAllSteps();
+            setIsGenerating(true);
+            setLoadingStepText(`Menyusun naskah penceritaan naratif alami mengalir lurus (target durasi: ${targetDuration})...`);
 
-            // Nav Tabs
-            document.querySelectorAll('.nav-tab-btn').forEach(btn => {
-                btn.addEventListener('click', () => { activeTab = btn.dataset.target; updateNavigation(); });
-            });
+            let targetMinutes = 10;
+            const minuteMatch = targetDuration.match(/(\d+)\s*(?:-|sampai)?\s*(\d+)?\s*(?:menit|min)/i);
+            const secondMatch = targetDuration.match(/(\d+)\s*(?:detik|sec)/i);
 
-            // Settings
-            document.getElementById('input-api-key').addEventListener('input', (e) => apiKey = e.target.value);
+            if (minuteMatch) {
+              targetMinutes = parseInt(minuteMatch[2] || minuteMatch[1], 10);
+            } else if (secondMatch) {
+              targetMinutes = Math.max(0.5, parseInt(secondMatch[1], 10) / 60);
+            }
 
-            // Format Buttons
-            document.getElementById('btn-format-16-9').addEventListener('click', () => {
-                project.format = "16:9"; project.step2Data.targetDuration = "10-15 Menit";
-                syncAllStepsWithScript(); showToast("Format diubah ke 16:9", "info");
-            });
-            document.getElementById('btn-format-9-16').addEventListener('click', () => {
-                project.format = "9:16"; project.step2Data.targetDuration = "30-60 Detik (Shorts)";
-                syncAllStepsWithScript(); showToast("Format diubah ke 9:16", "info");
-            });
+            const estimatedTargetWords = Math.round(targetMinutes * 130);
 
-            // Step 1 Inputs
-            document.getElementById('input-title').addEventListener('input', (e) => { project.title = e.target.value; project.step1Data.selectedTopic = e.target.value; renderAllSteps(); });
-            document.getElementById('select-category').addEventListener('change', (e) => { project.category = e.target.value; });
-            document.getElementById('select-mode').addEventListener('change', (e) => { project.mode = e.target.value; });
-            
-            document.getElementById('btn-generate-topics').addEventListener('click', async () => {
-                setLoading(true, "Mencari tren terbaru di Google Search...");
-                groundingSources = [];
-                const prompt = `Gunakan pencarian Google Search untuk menemukan ide topik SEDANG TRENDING mengenai kategori: "${project.category}" dengan sudut pandang/mode: "${project.mode}". Buat 6 rekomendasi format JSON Array murni: [{"title":"","reason":"","score":5,"badge":"","recommendedDuration":""}]`;
-                try {
-                    const res = await callGeminiAPI(prompt, "Anda AI Content Strategist untuk channel edukasi.", true);
-                    groundingSources = res.sources;
-                    let clean = res.text.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const match = clean.match(/\[.*\]/s);
-                    const parsed = JSON.parse(match ? match[0] : clean);
-                    project.step1Data.topics = parsed.map((t, i) => ({ ...t, id: `t-${Date.now()}-${i}` }));
-                    showToast("Berhasil menemukan ide topik!", "success");
-                } catch (err) {
-                    showToast("Gagal mencari tren Google.", "error");
-                } finally {
-                    setLoading(false);
-                    renderAllSteps();
+            const sysPrompt = `Anda adalah Lead Scriptwriter animasi edukasi populer (seperti Kok Bisa / Kurzgesagt). 
+Tugas Anda adalah menulis naskah penceritaan/narasi LONG-FORM yang MENGALIR LURUS & ALAMI SEPERTI CERITA DRAMA / STORYTELLING.
+
+PERATURAN SANGAT CRUCIAL:
+1. DILARANG KERAS MENGGUNAKAN JUDUL BAB (seperti "Bab 1", "Bab 2", "Bab 3", "[BAB 1]", "Pendahuluan", "Kesimpulan", dll).
+2. Tulis naskah dalam bentuk paragraf-paragraf narasi tutur kata santai, mengalir mulus dari pembukaan yang memikat, ke latar belakang sejarah, ke penjelasan sains detail, hingga refleksi penutup.
+3. PANJANG NASKAH HARUS MENYESUAIKAN TARGET DURASI: Target durasi adalah ${targetDuration} (Dibutuhkan minimal sekitar ${estimatedTargetWords} kata!). Tulis serinci dan selengkap mungkin agar durasi terpenuhi.`;
+
+            const userPrompt = `Tulis naskah narasi cerita mengalir lurus tanpa judul bab untuk topik: "${topic}".
+Kategori: ${project.category}.
+Target Durasi: ${targetDuration} (Target kata: sekitar ${estimatedTargetWords} kata).
+Instruksi Tambahan: ${customInst || 'Buat sangat menarik, alami, mendalam, dan komunikatif.'}`;
+
+            try {
+              const { text } = await callGeminiAPI(userPrompt, apiKey, sysPrompt, false);
+              const words = text.trim().split(/\s+/).length;
+              const estMinutes = Math.ceil(words / 130);
+
+              setProject(prev => ({
+                ...prev,
+                step2Data: {
+                  targetDuration,
+                  customInstruction: customInst,
+                  script: text,
+                  wordCount: words,
+                  estimatedDuration: `${Math.max(1, estMinutes - 2)}-${estMinutes} Menit`
                 }
-            });
+              }));
 
-            // Step 2 Logic
-            document.getElementById('input-duration').addEventListener('input', (e) => project.step2Data.targetDuration = e.target.value);
-            document.getElementById('input-custom-instruction').addEventListener('input', (e) => project.step2Data.customInstruction = e.target.value);
-            
-            const handleScriptGen = async (actionType = "generate") => {
-                const topic = project.step1Data.selectedTopic || project.title;
-                if (!topic) return showToast("Pilih topik dulu!", "error");
-                setLoading(true, `Memproses naskah penceritaan naratif...`);
-                
-                let prompt = "";
-                let sys = "Anda penulis naskah narasi edukasi. Pertahankan penceritaan mengalir TANPA JUDUL BAB.";
-                
-                if (actionType === "generate") {
-                    sys += " Tulis sekitar 1400 kata mengalir seperti cerita.";
-                    prompt = `Tulis narasi untuk topik: "${topic}". Kategori: ${project.category}. Target Durasi: ${project.step2Data.targetDuration}. Instruksi: ${project.step2Data.customInstruction}`;
-                } else if (actionType === "expand") {
-                    prompt = `Perluas naskah ini agar lebih panjang mengalir lurus:\n\n${project.step2Data.script}`;
-                } else if (actionType === "shorten") {
-                    prompt = `Rangkum naskah ini agar padat mengalir lurus:\n\n${project.step2Data.script}`;
+              syncAllStepsWithScript(text, topic, project.step3Data.visualStyle);
+              showToast("Naskah narasi mengalir lurus berhasil dibuat!", "success");
+            } catch (err) {
+              console.error(err);
+              showToast("Gagal menghasilkan naskah cerita.", "error");
+            } finally {
+              setIsGenerating(false);
+            }
+          };
+
+          const handleModifyScript = async (actionType) => {
+            if (!project.step2Data.script) {
+              showToast("Belum ada naskah untuk diubah.", "error");
+              return;
+            }
+
+            setIsGenerating(true);
+            setLoadingStepText(`Memproses perubahan naskah (${actionType})...`);
+
+            let promptAction = "";
+            if (actionType === 'Expand') promptAction = "Perluas dan tambahkan alur penceritaan cerita ini agar lebih panjang dan mendalam, tetap mengalir lurus tanpa judul bab.";
+            if (actionType === 'Shorten') promptAction = "Rangkum naskah ini agar lebih padat tanpa mengurangi esensi cerita naratif utamanya, tetap mengalir lurus tanpa bab.";
+            if (actionType === 'Improve') promptAction = "Tingkatkan gaya penceritaan narasi agar lebih dramatis, natural, dan mudah dipahami penonton, tanpa ada label judul bab.";
+
+            try {
+              const sysPrompt = "Anda adalah penulis naskah narasi cerita edukasi. Pertahankan format penceritaan mengalir lurus TANPA JUDUL BAB/BAB 1/BAB 2.";
+              const { text } = await callGeminiAPI(`${promptAction}\n\nNaskah Saat Ini:\n${project.step2Data.script}`, apiKey, sysPrompt, false);
+              
+              const words = text.trim().split(/\s+/).length;
+              const estMinutes = Math.ceil(words / 130);
+
+              setProject(prev => ({
+                ...prev,
+                step2Data: {
+                  ...prev.step2Data,
+                  script: text,
+                  wordCount: words,
+                  estimatedDuration: `${Math.max(1, estMinutes - 2)}-${estMinutes} Menit`
                 }
+              }));
 
-                try {
-                    const res = await callGeminiAPI(prompt, sys, false);
-                    const words = res.text.trim().split(/\s+/).length;
-                    const estMin = Math.ceil(words / 130);
-                    project.step2Data.script = res.text;
-                    project.step2Data.wordCount = words;
-                    project.step2Data.estimatedDuration = `${Math.max(1, estMin-2)}-${estMin} Menit`;
-                    syncAllStepsWithScript();
-                    showToast("Naskah berhasil diproses!", "success");
-                } catch (err) {
-                    showToast("Gagal memproses naskah.", "error");
-                } finally {
-                    setLoading(false);
-                    renderAllSteps();
+              syncAllStepsWithScript(text, project.title, project.step3Data.visualStyle);
+              showToast(`Naskah berhasil di-${actionType.toLowerCase()}!`, "success");
+            } catch (err) {
+              showToast("Gagal memperbarui naskah", "error");
+            } finally {
+              setIsGenerating(false);
+            }
+          };
+
+          const handleGenerateAIVisualPrompts = async () => {
+            if (!project.step2Data.script) {
+              showToast("Naskah belum dibuat di Step 2!", "error");
+              return;
+            }
+
+            setIsGenerating(true);
+            setLoadingStepText("Menganalisis alur cerita & membuat prompt visual sinematik Bahasa Inggris per adegan...");
+
+            const sysPrompt = `Anda adalah seorang Lead Concept Artist & Visual Director profesional untuk channel animasi edukasi (seperti Kok Bisa / Kurzgesagt).
+Tugas Anda adalah membaca naskah cerita dan merancang PROMPT VISUAL BAHASA INGGRIS YANG DETAIL & DESKRIPTIF untuk setiap adegan agar hasil gambar AI (Midjourney/Imagen/DALL-E) benar-benar menggambarkan situasi cerita.
+
+PERATURAN PENTING:
+1. DILARANG menempelkan teks narasi Bahasa Indonesia mentah ke dalam prompt!
+2. Terjemahkan esensi adegan ke dalam deskripsi visual Bahasa Inggris yang kaya: sebutkan Subjek Utama (Main Subject), Aksi/Kondisi (Action/State), Lingkungan/Latar Belakang (Environment), Sudut Kamera (Camera Angle: close-up, macro view, wide cinematic angle), serta Pencahayaan & Suasana (Lighting & Atmosphere).
+3. Buat adegan berurutan sesuai alur naskah cerita.
+4. Sesuaikan komposisi dengan rasio ${project.format}.
+
+Format Output HARUS JSON Array murni tanpa markdown tambahan:
+[
+  {
+    "sceneNum": "001",
+    "context": "Ringkasan adegan narasi singkat dlm Bahasa Indonesia",
+    "visualDescription": "Detailed English visual scene description containing subjects, environment, camera perspective, lighting, and focal details"
+  }
+]`;
+
+            const userPrompt = `Judul Topik: "${project.title || 'Edukasi Sains'}"
+Rasio Format: ${project.format}
+Gaya Visual Pilihan: ${project.step3Data.visualStyle}
+
+Naskah Cerita Lengkap:
+${project.step2Data.script}
+
+Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
+
+            try {
+              const { text } = await callGeminiAPI(userPrompt, apiKey, sysPrompt, false);
+              const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
+              let parsedScenes = [];
+              try {
+                parsedScenes = JSON.parse(cleanJson);
+              } catch (e) {
+                const jsonMatch = cleanJson.match(/\[.*\]/s);
+                if (jsonMatch) {
+                  parsedScenes = JSON.parse(jsonMatch[0]);
+                } else {
+                  throw new Error("Gagal mengurai respons AI.");
                 }
-            };
+              }
 
-            document.getElementById('btn-generate-script').addEventListener('click', () => handleScriptGen("generate"));
-            document.getElementById('btn-script-expand').addEventListener('click', () => { if(project.step2Data.script) handleScriptGen("expand"); });
-            document.getElementById('btn-script-shorten').addEventListener('click', () => { if(project.step2Data.script) handleScriptGen("shorten"); });
-            document.getElementById('btn-script-copy').addEventListener('click', () => copyToClipboard(project.step2Data.script, "Naskah"));
-            
-            document.getElementById('textarea-script').addEventListener('input', (e) => {
-                const val = e.target.value;
-                const words = val.trim() ? val.trim().split(/\s+/).length : 0;
-                project.step2Data.script = val;
-                project.step2Data.wordCount = words;
-                project.step2Data.estimatedDuration = `${Math.max(0, Math.ceil(words/130) - 1)}-${Math.ceil(words/130)} Menit`;
-                syncAllStepsWithScript();
-            });
+              if (parsedScenes && parsedScenes.length > 0) {
+                const ratioDesc = project.format === "9:16" 
+                  ? "9:16 vertical composition, full screen mobile view, vertical portrait ratio" 
+                  : "16:9 widescreen cinematic landscape format, horizontal composition";
 
-            // Step 3-6 Setup Buttons
-            document.getElementById('btn-sync-prompts').addEventListener('click', syncAllStepsWithScript);
-            document.getElementById('btn-copy-all-prompts').addEventListener('click', () => copyToClipboard(project.step3Data.prompts.map(p => `Scene ${p.sceneNum}:\n${p.prompt}`).join('\n\n'), "Semua Prompts"));
-            document.getElementById('input-anim-style').addEventListener('input', (e) => {
-                const s = e.target.value; project.step4Data.animationStyle = s;
-                project.step4Data.videoPrompts = project.step4Data.videoPrompts.map(p => ({...p, prompt: `${s}, ${p.prompt.substring(p.prompt.indexOf("of: ")) || p.prompt}`}));
-                renderAllSteps();
-            });
-            document.getElementById('btn-copy-all-video-prompts').addEventListener('click', () => copyToClipboard(project.step4Data.videoPrompts.map(p => `Scene ${p.sceneNum}:\n${p.prompt}`).join('\n\n'), "Video Prompts"));
-            
-            document.getElementById('input-cover-text').addEventListener('input', (e) => {
-                project.step5Data.selectedTextOption = e.target.value; syncAllStepsWithScript();
-            });
-            document.getElementById('textarea-cover-prompt').addEventListener('input', (e) => project.step5Data.readyPrompt = e.target.value);
-            document.getElementById('btn-copy-cover-prompt').addEventListener('click', () => copyToClipboard(project.step5Data.readyPrompt, "Cover Prompt"));
-            
-            document.getElementById('btn-copy-titles').addEventListener('click', () => copyToClipboard(project.step6Data.seoTitles.join('\n'), "Daftar Judul"));
-            document.getElementById('textarea-seo-desc').addEventListener('input', e => project.step6Data.videoDescription = e.target.value);
-            document.getElementById('btn-copy-desc').addEventListener('click', () => copyToClipboard(project.step6Data.videoDescription, "Deskripsi"));
-            document.getElementById('textarea-seo-tags').addEventListener('input', e => project.step6Data.seoKeywords = e.target.value);
-            document.getElementById('btn-copy-tags').addEventListener('click', () => copyToClipboard(project.step6Data.seoKeywords, "Tags"));
-            document.getElementById('textarea-seo-pin').addEventListener('input', e => project.step6Data.pinnedComment = e.target.value);
-            document.getElementById('btn-copy-pin').addEventListener('click', () => copyToClipboard(project.step6Data.pinnedComment, "Komentar Pin"));
+                const newPrompts = parsedScenes.map((sc, idx) => {
+                  const sceneNum = sc.sceneNum || String(idx + 1).padStart(3, '0');
+                  return {
+                    id: `img-ai-${Date.now()}-${idx + 1}`,
+                    sceneNum,
+                    context: sc.context || `Adegan ${idx + 1}`,
+                    prompt: `${project.step3Data.visualStyle}. ${sc.visualDescription}. ${ratioDesc}, 8k resolution, highly detailed composition.`
+                  };
+                });
 
-            // Reset logic
-            document.getElementById('btn-show-reset').addEventListener('click', window.handleCreateNewProject);
-            document.getElementById('btn-cancel-reset').addEventListener('click', () => document.getElementById('reset-modal').classList.add('hidden'));
-            document.getElementById('btn-confirm-reset').addEventListener('click', () => {
-                project = CREATE_EMPTY_PROJECT();
-                imagePreviews = {}; groundingSources = [];
-                activeTab = 'editor';
-                updateNavigation(); setStep(1); renderAllSteps();
-                document.getElementById('reset-modal').classList.add('hidden');
-                showToast("Sesi kerja direset!", "info");
-            });
-        });
+                const motionStyle = project.format === "9:16"
+                  ? "Vertical dynamic camera tilt and slow vertical pan. Smooth mobile-optimized 2D animation"
+                  : "Slow horizontal camera movement. Cinematic smooth 2D widescreen vector animation";
+
+                const newVideoPrompts = newPrompts.map((vp) => ({
+                  id: `vid-${vp.id}`,
+                  sceneNum: vp.sceneNum,
+                  prompt: `${motionStyle} depicting: ${vp.context}. Visual focus: ${vp.prompt.substring(0, 160)}. High resolution, 60fps cinematic feel.`
+                }));
+
+                setProject(prev => ({
+                  ...prev,
+                  step3Data: { ...prev.step3Data, prompts: newPrompts },
+                  step4Data: { ...prev.step4Data, videoPrompts: newVideoPrompts }
+                }));
+
+                showToast(`Berhasil membuat ${newPrompts.length} prompt visual AI sinematik yang mendetail!`, "success");
+              }
+            } catch (err) {
+              console.error(err);
+              showToast("Gagal menghasilkan prompt AI visual. Silakan coba lagi.", "error");
+            } finally {
+              setIsGenerating(false);
+            }
+          };
+
+          const handleGenerateSingleImagePreview = async (promptId, promptText) => {
+            setLoadingImageId(promptId);
+            try {
+              const imgUrl = await generateImagePreview(promptText, apiKey, project.format);
+              setImagePreviews(prev => ({ ...prev, [promptId]: imgUrl }));
+              showToast(`Preview gambar AI (${project.format}) berhasil dibuat!`, "success");
+            } catch (err) {
+              console.error(err);
+              showToast("Gagal membuat preview gambar. Cek API Key Anda.", "error");
+            } finally {
+              setLoadingImageId(null);
+            }
+          };
+
+          const confirmResetProject = () => {
+            setProject(CREATE_EMPTY_PROJECT());
+            setImagePreviews({});
+            setGroundingSources([]);
+            setActiveTab('editor');
+            setShowResetConfirm(false);
+            showToast("Sesi kerja baru berhasil dimulai!", "info");
+          };
+
+          return (
+            <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
+              {/* Toast Notification */}
+              {toast && (
+                <div className={`fixed bottom-5 right-5 z-50 flex items-center space-x-2 px-4 py-3 rounded-xl shadow-lg border text-xs font-semibold animate-bounce ${
+                  toast.type === 'success' ? 'bg-emerald-900 text-emerald-100 border-emerald-700' :
+                  toast.type === 'error' ? 'bg-red-900 text-red-100 border-red-700' :
+                  'bg-slate-900 text-white border-slate-700'
+                }`}>
+                  {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-amber-400" />}
+                  <span>{toast.message}</span>
+                </div>
+              )}
+
+              {/* Confirmation Modal for Reset Session */}
+              {showResetConfirm && (
+                <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-xl border border-slate-200">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-red-600 mb-1">
+                      <RefreshCw className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-slate-900 text-base">Reset Sesi Kerja?</h3>
+                      <p className="text-xs text-slate-500 mt-1">Seluruh progres naskah, topik, dan prompt yang belum disalin akan di-reset ke awal.</p>
+                    </div>
+                    <div className="flex items-center space-x-2 pt-2">
+                      <button 
+                        onClick={() => setShowResetConfirm(false)}
+                        className="flex-1 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition"
+                      >
+                        Batal
+                      </button>
+                      <button 
+                        onClick={confirmResetProject}
+                        className="flex-1 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition"
+                      >
+                        Ya, Reset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Main Top Header Bar */}
+              <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 lg:px-6 py-3 flex items-center justify-between shadow-xs">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h1 className="font-bold text-slate-900 text-base sm:text-lg tracking-tight">Kok Bisa? Studio AI</h1>
+                      <span className="bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 flex items-center space-x-1">
+                        <Globe className="w-3 h-3" />
+                        <span>Google Search Live</span>
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 hidden sm:block">AI Workflow Generator Naskah Narasi Edukasi Mengalir</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button 
+                    onClick={() => setShowResetConfirm(true)}
+                    className="flex items-center space-x-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition border border-red-200"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Reset Sesi & Mulai Baru</span>
+                  </button>
+                </div>
+              </header>
+
+              {/* Body Area */}
+              <div className="flex flex-1 overflow-hidden">
+                {/* Sidebar */}
+                <aside className="w-60 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col justify-between hidden md:flex">
+                  <div className="p-4 space-y-1">
+                    <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-3 mb-2">Navigasi Studio</div>
+                    
+                    <button 
+                      onClick={() => setActiveTab('editor')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition ${activeTab === 'editor' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      <Zap className="w-4 h-4 text-blue-600" />
+                      <span>Workflow Editor</span>
+                    </button>
+
+                    <button 
+                      onClick={() => setActiveTab('settings')}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition ${activeTab === 'settings' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}
+                    >
+                      <Settings className="w-4 h-4 text-slate-500" />
+                      <span>Pengaturan API</span>
+                    </button>
+                  </div>
+
+                  <div className="p-4 border-t border-slate-100 bg-slate-50/50">
+                    <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5">
+                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Status Sesi Saat Ini</span>
+                      <p className="text-xs font-semibold text-slate-800 line-clamp-1">{project.title || "Topik Belum Dipilih"}</p>
+                      <p className="text-[11px] text-slate-500">Step {project.currentStep} dari 6</p>
+                    </div>
+                  </div>
+                </aside>
+
+                {/* Main Content Pane */}
+                <main className="flex-1 overflow-y-auto p-4 lg:p-8 bg-slate-50">
+                  
+                  {activeTab === 'editor' && (
+                    <div className="max-w-5xl mx-auto space-y-6">
+                      
+                      {/* Stepper Header */}
+                      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs overflow-x-auto">
+                        <div className="flex items-center justify-between min-w-[650px] px-2">
+                          {[
+                            { num: 1, label: 'Tren Google' },
+                            { num: 2, label: 'Naskah Narasi' },
+                            { num: 3, label: 'Visual Prompts' },
+                            { num: 4, label: 'Video Motion' },
+                            { num: 5, label: 'Thumbnail Studio' },
+                            { num: 6, label: 'YouTube SEO' },
+                          ].map((step, idx) => {
+                            const isActive = project.currentStep === step.num;
+                            const isPassed = project.currentStep > step.num;
+                            return (
+                              <React.Fragment key={step.num}>
+                                <button 
+                                  onClick={() => setStep(step.num)}
+                                  className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs transition ${
+                                    isActive 
+                                      ? 'bg-blue-600 text-white font-semibold shadow-sm' 
+                                      : isPassed 
+                                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium' 
+                                      : 'text-slate-500 hover:bg-slate-100'
+                                  }`}
+                                >
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${
+                                    isActive ? 'bg-white text-blue-600 font-bold' : isPassed ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-600'
+                                  }`}>
+                                    {isPassed ? <Check className="w-3 h-3" /> : step.num}
+                                  </div>
+                                  <span className="whitespace-nowrap">{step.label}</span>
+                                </button>
+                                {idx < 5 && <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />}
+                              </React.Fragment>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* STEP 1: TOPIC DISCOVERY */}
+                      {project.currentStep === 1 && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                          <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 1 dari 6</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-xs text-slate-500">Format Konten & Pencarian Tren</span>
+                              </div>
+                              <h2 className="text-xl font-bold text-slate-900 mt-1">Setup Format & Topic Discovery</h2>
+                              <p className="text-sm text-slate-500">Pilih format rasio konten terlebih dahulu, lalu cari ide topik yang sedang tren di Google.</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                              1. Pilih Format Konten & Rasio Gambar / Video
+                            </label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setProject(prev => {
+                                    const updated = {
+                                      ...prev,
+                                      format: "16:9",
+                                      step2Data: { ...prev.step2Data, targetDuration: "10-15 Menit" }
+                                    };
+                                    syncAllStepsWithScript(prev.step2Data.script, prev.title, prev.step3Data.visualStyle, "16:9");
+                                    return updated;
+                                  });
+                                  showToast("Format diubah ke 16:9 Lanskap (Long-form YouTube)", "info");
+                                }}
+                                className={`p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${
+                                  project.format === '16:9' 
+                                    ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' 
+                                    : 'bg-slate-50 border-slate-200 hover:bg-white'
+                                }`}
+                              >
+                                <div className={`w-9 h-6 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[9px] mt-0.5 ${
+                                  project.format === '16:9' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'
+                                }`}>
+                                  16:9
+                                </div>
+                                <div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-bold text-slate-900 text-xs">📹 Long-form Video (16:9 Widescreen)</span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 mt-0.5">YouTube Reguler, Dokumenter & Animasi Lanskap (Durasi 8 - 15+ menit).</p>
+                                </div>
+                              </button>
+
+                              <button 
+                                type="button"
+                                onClick={() => {
+                                  setProject(prev => {
+                                    const updated = {
+                                      ...prev,
+                                      format: "9:16",
+                                      step2Data: { ...prev.step2Data, targetDuration: "30-60 Detik (Shorts)" }
+                                    };
+                                    syncAllStepsWithScript(prev.step2Data.script, prev.title, prev.step3Data.visualStyle, "9:16");
+                                    return updated;
+                                  });
+                                  showToast("Format diubah ke 9:16 Potret (Shorts / Reels / TikTok)", "info");
+                                }}
+                                className={`p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${
+                                  project.format === '9:16' 
+                                    ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' 
+                                    : 'bg-slate-50 border-slate-200 hover:bg-white'
+                                }`}
+                              >
+                                <div className={`w-5 h-8 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[8px] ${
+                                  project.format === '9:16' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'
+                                }`}>
+                                  9:16
+                                </div>
+                                <div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="font-bold text-slate-900 text-xs">📱 Short-form Content (9:16 Portrait)</span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-500 mt-0.5">YouTube Shorts, TikTok, Instagram Reels (Durasi singkat 30 - 60 detik).</p>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 pt-2">
+                            <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                              2. Cari atau Tentukan Topik Konten
+                            </label>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">Judul / Topik Pilihan Sendiri (Opsional)</label>
+                              <input 
+                                type="text" 
+                                placeholder="Ketik topik Anda sendiri atau klik tombol pencarian tren di bawah..."
+                                value={project.title}
+                                onChange={(e) => setProject({ ...project, title: e.target.value, step1Data: { ...project.step1Data, selectedTopic: e.target.value } })}
+                                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                              />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-1">
+                              <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">Kategori Edukasi</label>
+                                <select 
+                                  value={project.category}
+                                  onChange={(e) => setProject({ ...project, category: e.target.value })}
+                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
+                                >
+                                  <option value="Fakta Unik & Anomali Dunia">💡 Fakta Unik & Anomali Dunia</option>
+                                  <option value="Kisah Misteri & Konspirasi Sains">🔍 Kisah Misteri & Konspirasi Sains</option>
+                                  <option value="Sudut Pandang POV & Simulasi">👀 Sudut Pandang POV & Simulasi</option>
+                                  <option value="Luar Angkasa & Astronomi">🌌 Luar Angkasa & Astronomi</option>
+                                  <option value="Sains & Fisika">🔬 Sains & Fisika</option>
+                                  <option value="Tubuh Manusia & Biologi">🧬 Tubuh Manusia & Biologi</option>
+                                  <option value="Sejarah & Peradaban">📜 Sejarah & Peradaban</option>
+                                  <option value="Teknologi & AI">🤖 Teknologi, AI & Masa Depan</option>
+                                  <option value="Psikologi & Perilaku">🧠 Psikologi & Perilaku Manusia</option>
+                                  <option value="Pop Culture & Mitos vs Fakta">🎬 Pop Culture & Mitos vs Fakta</option>
+                                  <option value="Geografi & Fenomena Alam Ekstrem">🌍 Geografi & Fenomena Alam Ekstrem</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">Sudut Pandang Ide</label>
+                                <select 
+                                  value={project.mode}
+                                  onChange={(e) => setProject({ ...project, mode: e.target.value })}
+                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                >
+                                  <option value="Sedang Viral (Trending Google)">🔥 Sedang Viral (Trending Google)</option>
+                                  <option value="Mind-Blowing & Eksistensial">🤯 Mind-Blowing & Eksistensial</option>
+                                  <option value="Pengandaian (What If)">❓ Pengandaian (What If)</option>
+                                  <option value="Perspektif Orang Pertama (POV)">👁️ Perspektif Orang Pertama (POV)</option>
+                                  <option value="Penemuan & Misteri Terkini">🗝️ Penemuan & Misteri Terkini</option>
+                                </select>
+                              </div>
+
+                              <div className="flex items-end">
+                                <button 
+                                  onClick={() => handleGenerateTopics(project.category, project.mode)}
+                                  disabled={isGenerating}
+                                  className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs py-2.5 px-4 rounded-xl shadow-md transition disabled:opacity-50"
+                                >
+                                  {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
+                                  <span>Cari Tren Google</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          {groundingSources.length > 0 && (
+                            <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
+                              <div className="flex items-center space-x-1.5 text-slate-700 font-semibold">
+                                <Globe className="w-3.5 h-3.5 text-blue-600" />
+                                <span>Sumber Pencarian Web Google:</span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 pt-1">
+                                {groundingSources.map((src, i) => (
+                                  <a 
+                                    key={i} 
+                                    href={src.uri} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="bg-white border border-slate-200 hover:border-blue-300 text-blue-600 px-2.5 py-1 rounded-lg text-[11px] flex items-center space-x-1"
+                                  >
+                                    <span className="line-clamp-1">{src.title}</span>
+                                    <ExternalLink className="w-2.5 h-2.5" />
+                                  </a>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="space-y-3 pt-2">
+                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
+                              <TrendingUp className="w-4 h-4 text-blue-600" />
+                              <span>Rekomendasi Topik Trending ({project.step1Data.topics.length})</span>
+                            </h3>
+
+                            {project.step1Data.topics.length === 0 ? (
+                              <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                <p className="text-xs font-medium text-slate-600">Belum ada topik yang ditemukan.</p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">Klik "Cari Tren Google" di atas atau ketik judul Anda secara langsung.</p>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {project.step1Data.topics.map((t, idx) => {
+                                  const isSelected = project.step1Data.selectedTopic === t.title;
+                                  return (
+                                    <div 
+                                      key={t.id || idx}
+                                      className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
+                                        isSelected 
+                                          ? 'bg-blue-50/70 border-blue-500 shadow-sm ring-1 ring-blue-500' 
+                                          : 'bg-white border-slate-200 hover:border-slate-300'
+                                      }`}
+                                    >
+                                      <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">{t.badge || `Trending #${idx + 1}`}</span>
+                                          <div className="flex items-center text-amber-400">
+                                            {[...Array(Math.min(5, Math.max(1, Math.round(Number(t.score) || 5))))].map((_, i) => (
+                                              <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                            ))}
+                                          </div>
+                                        </div>
+                                        <h4 className="font-bold text-slate-900 text-sm mb-1">{t.title}</h4>
+                                        <p className="text-xs text-slate-500 mb-3">{t.reason}</p>
+                                      </div>
+
+                                      <button 
+                                        onClick={() => {
+                                          const autoDuration = t.recommendedDuration || (project.format === '9:16' ? "30-60 Detik (Shorts)" : "10-15 Menit");
+                                          setProject(prev => ({
+                                            ...prev,
+                                            title: t.title,
+                                            step1Data: { ...prev.step1Data, selectedTopic: t.title, selectedReason: t.reason },
+                                            step2Data: { ...prev.step2Data, targetDuration: autoDuration }
+                                          }));
+                                          showToast(`Topik dipilih: ${t.title}`, "info");
+                                        }}
+                                        className={`w-full text-xs font-semibold py-2 rounded-xl border transition ${
+                                          isSelected 
+                                            ? 'bg-blue-600 text-white border-blue-600' 
+                                            : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
+                                        }`}
+                                      >
+                                        {isSelected ? '✓ Topik Terpilih' : 'Gunakan Topik Ini'}
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex justify-end pt-4 border-t border-slate-100">
+                            <button 
+                              onClick={() => setStep(2)}
+                              className="flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition"
+                            >
+                              <span>Lanjut ke Step 2 (Naskah Narasi)</span>
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STEP 2: SCRIPT EDITOR */}
+                      {project.currentStep === 2 && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                          <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 2 dari 6</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-xs text-slate-500">Naskah Narasi Alami</span>
+                              </div>
+                              <h2 className="text-xl font-bold text-slate-900 mt-1">Continuous Script Storytelling (Tanpa Bab)</h2>
+                              <p className="text-sm text-slate-500">Naskah cerita mengalir lurus secara alami tanpa potongan judul bab rigid untuk menjaga keterikatan penonton.</p>
+                            </div>
+                          </div>
+
+                          <div className="bg-blue-50/60 border border-blue-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                            <div>
+                              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Topik Terpilih ({project.category})</span>
+                              <h3 className="font-bold text-slate-900 text-base">{project.step1Data.selectedTopic || project.title || "Belum ada topik terpilih"}</h3>
+                            </div>
+                            
+                            <button 
+                              onClick={() => handleGenerateScript(project.step2Data.customInstruction, project.step2Data.targetDuration)}
+                              disabled={isGenerating}
+                              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition disabled:opacity-50 whitespace-nowrap self-start md:self-auto"
+                            >
+                              {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                              <span>Generate Naskah Narasi</span>
+                            </button>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <label className="block text-xs font-semibold text-slate-700">
+                                  Target Durasi Video ({project.format === '9:16' ? 'Shorts 9:16' : 'Long-form 16:9'})
+                                </label>
+                                <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                  Bisa diketik manual
+                                </span>
+                              </div>
+
+                              <div className="space-y-2">
+                                <input 
+                                  type="text" 
+                                  value={project.step2Data.targetDuration}
+                                  onChange={(e) => setProject({ ...project, step2Data: { ...project.step2Data, targetDuration: e.target.value } })}
+                                  placeholder={project.format === '9:16' ? "Ketik durasi (contoh: 45 Detik, 1 Menit)..." : "Ketik durasi (contoh: 12 Menit, 15 Menit)..."}
+                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
+                                />
+
+                                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                                  <span className="text-[10px] text-slate-400 font-medium mr-0.5">Pilihan Cepat:</span>
+                                  {project.format === '9:16' ? (
+                                    ['30 Detik', '45 Detik', '60 Detik (Shorts)', '90 Detik'].map((dur) => (
+                                      <button
+                                        key={dur}
+                                        type="button"
+                                        onClick={() => setProject(prev => ({ ...prev, step2Data: { ...prev.step2Data, targetDuration: dur } }))}
+                                        className={`text-[10px] px-2 py-0.5 rounded-lg border transition ${
+                                          project.step2Data.targetDuration === dur 
+                                            ? 'bg-blue-600 text-white border-blue-600 font-semibold' 
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                        }`}
+                                      >
+                                        {dur}
+                                      </button>
+                                    ))
+                                  ) : (
+                                    ['8-10 Menit', '15-20 Menit', '30 Menit', '45 Menit', '60 Menit'].map((dur) => (
+                                      <button
+                                        key={dur}
+                                        type="button"
+                                        onClick={() => setProject(prev => ({ ...prev, step2Data: { ...prev.step2Data, targetDuration: dur } }))}
+                                        className={`text-[10px] px-2 py-0.5 rounded-lg border transition ${
+                                          project.step2Data.targetDuration === dur 
+                                            ? 'bg-blue-600 text-white border-blue-600 font-semibold' 
+                                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                                        }`}
+                                      >
+                                        {dur}
+                                      </button>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-slate-700 mb-1">Instruksi Cerita Khusus</label>
+                              <input 
+                                type="text" 
+                                placeholder="Contoh: Fokuskan pada alur rasa penasaran, analogi santai..."
+                                value={project.step2Data.customInstruction}
+                                onChange={(e) => setProject({ ...project, step2Data: { ...project.step2Data, customInstruction: e.target.value } })}
+                                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3 text-xs text-slate-500 font-medium">
+                                <span>Jumlah Kata: <strong className="text-slate-800">{project.step2Data.wordCount}</strong></span>
+                                <span>•</span>
+                                <span>Estimasi Durasi: <strong className="text-slate-800">{project.step2Data.estimatedDuration}</strong></span>
+                              </div>
+
+                              <div className="flex items-center space-x-1.5">
+                                <button 
+                                  onClick={() => handleModifyScript('Expand')}
+                                  disabled={isGenerating || !project.step2Data.script}
+                                  className="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                                >
+                                  + Perluas
+                                </button>
+                                <button 
+                                  onClick={() => handleModifyScript('Shorten')}
+                                  disabled={isGenerating || !project.step2Data.script}
+                                  className="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                                >
+                                  - Ringkas
+                                </button>
+                                <button 
+                                  onClick={() => copyToClipboard(project.step2Data.script, "Naskah")}
+                                  disabled={!project.step2Data.script}
+                                  className="text-[11px] font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg transition disabled:opacity-50 flex items-center space-x-1"
+                                >
+                                  <Copy className="w-3 h-3" />
+                                  <span>Salin</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            <textarea 
+                              rows={16}
+                              placeholder="Naskah cerita narasi yang mengalir lurus akan muncul di sini... Anda juga bisa mengetik atau mengedit langsung di kotak ini."
+                              value={project.step2Data.script}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                const words = val.trim() ? val.trim().split(/\s+/).length : 0;
+                                const estMin = Math.ceil(words / 130);
+                                setProject(prev => ({
+                                  ...prev,
+                                  step2Data: {
+                                    ...prev.step2Data,
+                                    script: val,
+                                    wordCount: words,
+                                    estimatedDuration: `${Math.max(0, estMin - 1)}-${estMin} Menit`
+                                  }
+                                }));
+                                syncAllStepsWithScript(val, project.title, project.step3Data.visualStyle);
+                              }}
+                              className="w-full text-xs font-sans bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed text-slate-800"
+                            />
+                          </div>
+
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <button 
+                              onClick={() => setStep(1)}
+                              className="flex items-center space-x-1.5 text-slate-600 hover:text-slate-900 text-xs font-medium"
+                            >
+                              <ChevronLeft className="w-4 h-4" />
+                              <span>Kembali ke Step 1</span>
+                            </button>
+
+                            <button 
+                              onClick={() => setStep(3)}
+                              className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center space-x-2"
+                            >
+                              <span>Lanjut ke Step 3 (Visual Prompts)</span>
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STEP 3: VISUAL PROMPTS GENERATOR */}
+                      {project.currentStep === 3 && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                          <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 3 dari 6</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-xs text-slate-500">Image Generation Prompts</span>
+                              </div>
+                              <h2 className="text-xl font-bold text-slate-900 mt-1">Visual Prompts per Scene</h2>
+                              <p className="text-sm text-slate-500">Prompt gambar sinematik yang dirancang khusus menggambarkan setiap adegan alur cerita secara akurat.</p>
+                            </div>
+
+                            <button 
+                              onClick={handleGenerateAIVisualPrompts}
+                              disabled={isGenerating || !project.step2Data.script}
+                              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition disabled:opacity-50 whitespace-nowrap"
+                            >
+                              {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
+                              <span>Generate Prompt AI Sinematik (Gemini)</span>
+                            </button>
+                          </div>
+
+                          {/* Visual Style Selector */}
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center space-x-2">
+                                <Palette className="w-4 h-4 text-amber-600" />
+                                <span>Pilih Gaya Visual / Art Style</span>
+                              </label>
+                              <button 
+                                onClick={() => syncAllStepsWithScript(project.step2Data.script, project.title, project.step3Data.visualStyle)}
+                                className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center space-x-1"
+                              >
+                                <RefreshCw className="w-3.5 h-3.5" />
+                                <span>Reset/Sinkronkan Dasar</span>
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                              {VISUAL_STYLES.map((style) => {
+                                const isSelected = project.step3Data.selectedStyleId === style.id;
+                                return (
+                                  <button
+                                    key={style.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setProject(prev => ({
+                                        ...prev,
+                                        step3Data: {
+                                          ...prev.step3Data,
+                                          selectedStyleId: style.id,
+                                          visualStyle: style.promptPrefix
+                                        }
+                                      }));
+                                      syncAllStepsWithScript(project.step2Data.script, project.title, style.promptPrefix);
+                                      showToast(`Gaya visual diubah: ${style.label}`, "info");
+                                    }}
+                                    className={`px-4 py-3.5 rounded-2xl border text-left transition flex items-center space-x-3 text-xs font-medium cursor-pointer ${
+                                      isSelected 
+                                        ? 'bg-[#fcf8f2] border-[#cbb387] text-amber-950 font-bold shadow-xs ring-1 ring-[#cbb387]' 
+                                        : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'
+                                    }`}
+                                  >
+                                    <span className="text-base leading-none">{style.icon}</span>
+                                    <span className="truncate">{style.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="space-y-4 pt-2">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                Daftar Prompt Adegan ({project.step3Data.prompts.length} Scene)
+                              </h3>
+                              <div className="flex items-center space-x-3 text-[11px] text-slate-500 font-medium">
+                                <span>Rasio Pilihan: <strong>{project.format}</strong></span>
+                              </div>
+                            </div>
+
+                            {project.step3Data.prompts.length === 0 ? (
+                              <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <ImageIcon className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                <p className="text-xs font-medium text-slate-600">Belum ada prompt visual.</p>
+                                <p className="text-[11px] text-slate-400">Buat naskah terlebih dahulu di Step 2 lalu klik "Generate Prompt AI Sinematik".</p>
+                              </div>
+                            ) : (
+                              project.step3Data.prompts.map((vp) => (
+                                <div key={vp.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="bg-slate-200 text-slate-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Scene {vp.sceneNum}</span>
+                                      <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Rasio {project.format}</span>
+                                    </div>
+                                    
+                                    <div className="flex items-center space-x-2">
+                                      <button 
+                                        onClick={() => handleGenerateSingleImagePreview(vp.id, vp.prompt)}
+                                        disabled={loadingImageId === vp.id}
+                                        className="text-[11px] font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg transition flex items-center space-x-1 disabled:opacity-50"
+                                      >
+                                        {loadingImageId === vp.id ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                                        <span>Preview AI ({project.format})</span>
+                                      </button>
+
+                                      <button 
+                                        onClick={() => copyToClipboard(vp.prompt, `Prompt Scene ${vp.sceneNum}`)}
+                                        className="text-[11px] font-semibold bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg transition flex items-center space-x-1"
+                                      >
+                                        <Copy className="w-3 h-3" />
+                                        <span>Salin Prompt</span>
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <p className="text-xs text-slate-600 font-medium italic bg-white/70 p-2 rounded-lg border border-slate-200/60">{vp.context}</p>
+
+                                  <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800 leading-relaxed">
+                                    {vp.prompt}
+                                  </div>
+
+                                  {imagePreviews[vp.id] && (
+                                    <div className={`mt-3 relative rounded-xl overflow-hidden border border-slate-200 bg-slate-900 ${
+                                      project.format === '9:16' ? 'max-w-[220px] aspect-[9/16]' : 'max-w-md aspect-[16/9]'
+                                    }`}>
+                                      <img src={imagePreviews[vp.id]} alt="AI Preview" className="w-full h-full object-cover" />
+                                      <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
+                                        Imagen 4 ({project.format})
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <button onClick={() => setStep(2)} className="text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center space-x-1">
+                              <ChevronLeft className="w-4 h-4" />
+                              <span>Kembali ke Step 2</span>
+                            </button>
+
+                            <button onClick={() => setStep(4)} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center space-x-2">
+                              <span>Lanjut ke Step 4 (Video Motion)</span>
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STEP 4: VIDEO MOTION PROMPTS */}
+                      {project.currentStep === 4 && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                          <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 4 dari 6</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-xs text-slate-500">Runway / Sora / Luma Animation</span>
+                              </div>
+                              <h2 className="text-xl font-bold text-slate-900 mt-1">Video Motion & Camera Prompts</h2>
+                              <p className="text-sm text-slate-500">Prompt pergerakan kamera dan animasi video untuk generator video AI seperti Runway Gen-2/3, Pika, atau Luma.</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-4">
+                            {project.step4Data.videoPrompts.length === 0 ? (
+                              <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                <Video className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                <p className="text-xs font-medium text-slate-600">Belum ada prompt video motion.</p>
+                              </div>
+                            ) : (
+                              project.step4Data.videoPrompts.map((vid) => (
+                                <div key={vid.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                                  <div className="flex items-center justify-between">
+                                    <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Motion Scene {vid.sceneNum}</span>
+                                    
+                                    <button 
+                                      onClick={() => copyToClipboard(vid.prompt, `Motion Prompt ${vid.sceneNum}`)}
+                                      className="text-[11px] font-semibold bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 px-2.5 py-1 rounded-lg transition flex items-center space-x-1"
+                                    >
+                                      <Copy className="w-3 h-3" />
+                                      <span>Salin Video Prompt</span>
+                                    </button>
+                                  </div>
+
+                                  <div className="bg-white p-3 rounded-xl border border-slate-200 text-xs font-mono text-slate-800">
+                                    {vid.prompt}
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <button onClick={() => setStep(3)} className="text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center space-x-1">
+                              <ChevronLeft className="w-4 h-4" />
+                              <span>Kembali ke Step 3</span>
+                            </button>
+
+                            <button onClick={() => setStep(5)} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center space-x-2">
+                              <span>Lanjut ke Step 5 (Thumbnail)</span>
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STEP 5: THUMBNAIL STUDIO */}
+                      {project.currentStep === 5 && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                          <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 5 dari 6</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-xs text-slate-500">Desain Thumbnail & Teks CTR</span>
+                              </div>
+                              <h2 className="text-xl font-bold text-slate-900 mt-1">Thumbnail Studio</h2>
+                              <p className="text-sm text-slate-500">Optimalkan klik penonton (CTR) dengan pilihan kata-kata thumbnail dan prompt desain visual yang kuat.</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-slate-700">Prompt Siap Pakai Desain Thumbnail</label>
+                              <button 
+                                onClick={() => copyToClipboard(project.step5Data.readyPrompt, "Prompt Thumbnail")}
+                                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center space-x-1"
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>Salin Prompt</span>
+                              </button>
+                            </div>
+                            
+                            <textarea 
+                              rows={4}
+                              value={project.step5Data.readyPrompt}
+                              onChange={(e) => setProject({ ...project, step5Data: { ...project.step5Data, readyPrompt: e.target.value } })}
+                              className="w-full text-xs font-mono bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white outline-none"
+                            />
+                          </div>
+
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <button onClick={() => setStep(4)} className="text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center space-x-1">
+                              <ChevronLeft className="w-4 h-4" />
+                              <span>Kembali ke Step 4</span>
+                            </button>
+
+                            <button onClick={() => setStep(6)} className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center space-x-2">
+                              <span>Lanjut ke Step 6 (YouTube SEO)</span>
+                              <ChevronRight className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* STEP 6: YOUTUBE SEO */}
+                      {project.currentStep === 6 && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+                          <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 6 dari 6</span>
+                                <span className="text-slate-300">•</span>
+                                <span className="text-xs text-slate-500">Metadata Publikasi YouTube</span>
+                              </div>
+                              <h2 className="text-xl font-bold text-slate-900 mt-1">YouTube SEO & Metadata</h2>
+                              <p className="text-sm text-slate-500">Rekomendasi judul viral, deskripsi video, kata kunci tag, dan komentar tersemat.</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-3">
+                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Opsi Judul Video YouTube High-CTR</h3>
+                            <div className="space-y-2">
+                              {project.step6Data.seoTitles.map((t, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium">
+                                  <span className="text-slate-800">{t}</span>
+                                  <button 
+                                    onClick={() => copyToClipboard(t, `Judul ${idx + 1}`)}
+                                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center space-x-1"
+                                  >
+                                    <Copy className="w-3 h-3" />
+                                    <span>Salin</span>
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-slate-700">Deskripsi Video YouTube</label>
+                              <button 
+                                onClick={() => copyToClipboard(project.step6Data.videoDescription, "Deskripsi Video")}
+                                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center space-x-1"
+                              >
+                                <Copy className="w-3 h-3" />
+                                <span>Salin Deskripsi</span>
+                              </button>
+                            </div>
+                            
+                            <textarea 
+                              rows={6}
+                              value={project.step6Data.videoDescription}
+                              onChange={(e) => setProject({ ...project, step6Data: { ...project.step6Data, videoDescription: e.target.value } })}
+                              className="w-full text-xs font-sans bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white outline-none leading-relaxed"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-slate-700">Hashtags</label>
+                              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-blue-600">
+                                {project.step6Data.hashtags || '#Sains #Edukasi #KokBisa'}
+                              </div>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-xs font-bold text-slate-700">Komentar Tersemat (Pinned Comment)</label>
+                              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700">
+                                {project.step6Data.pinnedComment || 'Tulis tanggapan kamu di kolom komentar ya!'}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-4 border-t border-slate-100">
+                            <button onClick={() => setStep(5)} className="text-slate-600 hover:text-slate-900 text-xs font-medium flex items-center space-x-1">
+                              <ChevronLeft className="w-4 h-4" />
+                              <span>Kembali ke Step 5</span>
+                            </button>
+
+                            <button 
+                              onClick={() => {
+                                copyToClipboard(`JUDUL:\n${project.step6Data.seoTitles[0] || project.title}\n\nNASKAH:\n${project.step2Data.script}\n\nDESKRIPSI:\n${project.step6Data.videoDescription}`, "Seluruh Konten Proyek");
+                              }}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition flex items-center space-x-2"
+                            >
+                              <CheckCircle2 className="w-4 h-4" />
+                              <span>Salin Seluruh Konten Proyek</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'settings' && (
+                    <div className="max-w-2xl mx-auto bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-900">Pengaturan API & Konektivitas</h2>
+                        <p className="text-xs text-slate-500">Atur API Key kustom Anda jika ingin menggunakan kuota Anda sendiri untuk Gemini 2.5 Flash & Imagen 4.</p>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">Gemini API Key Kustom (Opsional)</label>
+                          <input 
+                            type="password" 
+                            placeholder="Masukkan Gemini API Key (biarkan kosong untuk kunci bawaan sistem)"
+                            value={apiKey}
+                            onChange={(e) => setApiKey(e.target.value)}
+                            className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white outline-none font-mono"
+                          />
+                          <p className="text-[11px] text-slate-400 mt-1">Sistem secara otomatis menginjeksikan API Key jika dikosongkan.</p>
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100 flex justify-end">
+                        <button 
+                          onClick={() => showToast("Pengaturan berhasil disimpan!", "success")}
+                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-5 py-2.5 rounded-xl transition"
+                        >
+                          Simpan Pengaturan
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </main>
+              </div>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
