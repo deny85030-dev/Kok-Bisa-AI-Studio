@@ -8,7 +8,7 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- Google Fonts: Inter -->
+    <!-- Google Fonts: Inter & JetBrains Mono -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -62,22 +62,20 @@
         const RefreshCw = (props) => <Icon {...props} path={<><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></>} />;
         const Zap = (props) => <Icon {...props} path={<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>} />;
         const AlertCircle = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></>} />;
-        const FileText = (props) => <Icon {...props} path={<><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><polyline points="14 2 14 8 20 8"/><line x1="16" x2="8" y1="13" y2="13"/><line x1="16" x2="8" y1="17" y2="17"/><polyline points="10 9 9 9 8 9"/></>} />;
-        const Video = (props) => <Icon {...props} path={<><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></>} />;
         const ImageIcon = (props) => <Icon {...props} path={<><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></>} />;
-        const Tag = (props) => <Icon {...props} path={<path d="M12 2H2v10l11.29 11.29a1 1 0 0 0 1.41 0l7.29-7.29a1 1 0 0 0 0-1.41L12 2zM7 7h.01"/>} />;
         const Star = (props) => <Icon {...props} path={<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>} />;
         const ExternalLink = (props) => <Icon {...props} path={<><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></>} />;
         const Globe = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></>} />;
         const TrendingUp = (props) => <Icon {...props} path={<><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></>} />;
         const Palette = (props) => <Icon {...props} path={<><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.71 1.7-1.63 0-.43-.17-.83-.44-1.12a1.64 1.64 0 0 1 1.16-2.75H17c2.76 0 5-2.24 5-5 0-5.5-4.5-10-10-10z"/></>} />;
         const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
+        const Video = (props) => <Icon {...props} path={<><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></>} />;
 
         const DEFAULT_GEMINI_KEY = ""; // Provided at runtime or user setting
 
         const VISUAL_STYLES = [
-          { id: 'realistic', label: 'Realistik Fotografi', icon: '📷', promptPrefix: 'Realistic Photographic, ultra detailed studio photography, photorealistic, dramatic natural lighting, 8k resolution' },
           { id: 'flat_vector', label: 'Modern Flat Vector', icon: '🎨', promptPrefix: 'Modern Educational Animation, Flat Illustration, Clean Vector Art, Kok Bisa Style, vibrant palette' },
+          { id: 'realistic', label: 'Realistik Fotografi', icon: '📷', promptPrefix: 'Realistic Photographic, ultra detailed studio photography, photorealistic, dramatic natural lighting, 8k resolution' },
           { id: 'pixar_3d', label: '3D Animation (Pixar)', icon: '✨', promptPrefix: '3D Character Animation, Pixar Visual Style, Expressive 3D render, Vibrant Cinema 4D Lighting' },
           { id: 'anime', label: 'Anime Manga Keyframe', icon: '🌸', promptPrefix: 'Anime Keyframe Art, Japanese Animation Style, Makoto Shinkai aesthetic, vivid cell shading, dramatic anime lighting' },
           { id: 'sketch', label: 'Cinematic Sketch', icon: '✏️', promptPrefix: 'Cinematic Concept Sketch, Hand-drawn Storyboard Art, Pencil & Ink Line Art, Expressive Hatching, Graphic Concept' },
@@ -159,7 +157,7 @@
           throw new Error("Gagal memperoleh gambar dari Imagen API");
         }
 
-        function parseScriptToVisualPrompts(scriptText, visualStyle = VISUAL_STYLES[1].promptPrefix, aspectFormat = "16:9") {
+        function parseScriptToVisualPrompts(scriptText, visualStyle = VISUAL_STYLES[0].promptPrefix, aspectFormat = "16:9") {
           if (!scriptText || scriptText.trim().length === 0) return [];
 
           const paragraphs = scriptText
@@ -212,9 +210,9 @@
 
         const CREATE_EMPTY_PROJECT = () => ({
           id: `session-${Date.now()}`,
-          title: "Topik Edukasi Baru",
+          title: "", // Empty default title as requested
           format: "16:9",
-          category: "Fakta Unik & Anomali Dunia",
+          category: "Fakta Unik",
           mode: "Sedang Viral (Trending Google)",
           targetAudience: "Remaja & Dewasa Muda (15-30 tahun)",
           style: "Edukasi Naratif Santai & Menarik",
@@ -223,7 +221,7 @@
           updatedAt: new Date().toISOString(),
           step1Data: { selectedTopic: "", selectedReason: "", topics: [] },
           step2Data: { targetDuration: "10-15 Menit", customInstruction: "", wordCount: 0, estimatedDuration: "0 Menit", script: "" },
-          step3Data: { selectedStyleId: "flat_vector", visualStyle: VISUAL_STYLES[1].promptPrefix, prompts: [] },
+          step3Data: { selectedStyleId: "flat_vector", visualStyle: VISUAL_STYLES[0].promptPrefix, prompts: [] },
           step4Data: { animationStyle: "Animasi lambat, transisi mulus, pergerakan kamera sinematik", videoPrompts: [] },
           step5Data: { ctrAnalysis: "", selectedTextOption: "", textOptions: [], visualConcept: "", readyPrompt: "" },
           step6Data: { seoTitles: [], videoDescription: "", seoKeywords: "", youtubeTags: [], hashtags: "", pinnedComment: "" }
@@ -382,7 +380,7 @@
 
           const handleGenerateScript = async (customInst, targetDuration = "10-15 Menit") => {
             const topic = project.step1Data.selectedTopic || project.title;
-            if (!topic || topic.trim() === "" || topic === "Topik Edukasi Baru") {
+            if (!topic || topic.trim() === "") {
               showToast("Silakan pilih atau ketik judul topik terlebih dahulu di Step 1!", "error");
               return;
             }
@@ -858,17 +856,17 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                   onChange={(e) => setProject({ ...project, category: e.target.value })}
                                   className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
                                 >
-                                  <option value="Fakta Unik & Anomali Dunia">💡 Fakta Unik & Anomali Dunia</option>
-                                  <option value="Kisah Misteri & Konspirasi Sains">🔍 Kisah Misteri & Konspirasi Sains</option>
-                                  <option value="Sudut Pandang POV & Simulasi">👀 Sudut Pandang POV & Simulasi</option>
-                                  <option value="Luar Angkasa & Astronomi">🌌 Luar Angkasa & Astronomi</option>
-                                  <option value="Sains & Fisika">🔬 Sains & Fisika</option>
-                                  <option value="Tubuh Manusia & Biologi">🧬 Tubuh Manusia & Biologi</option>
-                                  <option value="Sejarah & Peradaban">📜 Sejarah & Peradaban</option>
-                                  <option value="Teknologi & AI">🤖 Teknologi, AI & Masa Depan</option>
-                                  <option value="Psikologi & Perilaku">🧠 Psikologi & Perilaku Manusia</option>
-                                  <option value="Pop Culture & Mitos vs Fakta">🎬 Pop Culture & Mitos vs Fakta</option>
-                                  <option value="Geografi & Fenomena Alam Ekstrem">🌍 Geografi & Fenomena Alam Ekstrem</option>
+                                  <option value="Fakta Unik">💡 Fakta Unik</option>
+                                  <option value="Misteri Sains">🔍 Misteri Sains</option>
+                                  <option value="Astronomi">🌌 Astronomi</option>
+                                  <option value="Fisika">🔬 Fisika</option>
+                                  <option value="Biologi">🧬 Biologi</option>
+                                  <option value="Sejarah">📜 Sejarah</option>
+                                  <option value="Teknologi AI">🤖 Teknologi AI</option>
+                                  <option value="Psikologi">🧠 Psikologi</option>
+                                  <option value="Pop Culture">🎬 Pop Culture</option>
+                                  <option value="Geografi & Alam">🌍 Geografi & Alam</option>
+                                  <option value="Simulasi POV">👁️ Simulasi POV</option>
                                 </select>
                               </div>
 
