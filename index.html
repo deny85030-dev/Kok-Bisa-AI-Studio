@@ -25,7 +25,6 @@
         .font-mono {
             font-family: 'JetBrains Mono', monospace;
         }
-        /* Custom scrollbar styling */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -39,6 +38,29 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
+        }
+        .api-card {
+            transition: all 0.2s ease;
+        }
+        .api-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+        }
+        .api-card.selected {
+            border-color: #6366f1;
+            background: #eef2ff;
+            box-shadow: 0 0 0 2px #6366f1;
+        }
+        .model-tag {
+            transition: all 0.15s ease;
+        }
+        .model-tag:hover {
+            transform: scale(1.02);
+        }
+        .model-tag.selected {
+            background: #6366f1;
+            color: white;
+            border-color: #6366f1;
         }
     </style>
 </head>
@@ -70,8 +92,13 @@
         const Palette = (props) => <Icon {...props} path={<><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.92 0 1.7-.71 1.7-1.63 0-.43-.17-.83-.44-1.12a1.64 1.64 0 0 1 1.16-2.75H17c2.76 0 5-2.24 5-5 0-5.5-4.5-10-10-10z"/></>} />;
         const CheckCircle2 = (props) => <Icon {...props} path={<><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></>} />;
         const Video = (props) => <Icon {...props} path={<><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2" ry="2"/></>} />;
-
-        const DEFAULT_GEMINI_KEY = ""; // Provided at runtime or user setting
+        const Key = (props) => <Icon {...props} path={<><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3"/></>} />;
+        const Eye = (props) => <Icon {...props} path={<><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></>} />;
+        const EyeOff = (props) => <Icon {...props} path={<><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.52 13.52 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/></>} />;
+        const Server = (props) => <Icon {...props} path={<><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="5" x2="22" y2="5"/><line x1="2" y1="19" x2="22" y2="19"/></>} />;
+        const Brain = (props) => <Icon {...props} path={<><path d="M12 4a4 4 0 0 1 4 4c0 1.5-.5 2.5-1 3.5a6 6 0 0 1 1 3.5 6 6 0 0 1-6 6 6 6 0 0 1-6-6c0-1.5.5-2.5 1-3.5A4 4 0 0 1 8 8a4 4 0 0 1 4-4z"/><path d="M12 4v20"/><path d="M8 12h8"/></>} />;
+        const CheckBadge = (props) => <Icon {...props} path={<><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></>} />;
+        const Shield = (props) => <Icon {...props} path={<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>} />;
 
         const VISUAL_STYLES = [
           { id: 'flat_vector', label: 'Modern Flat Vector', icon: '🎨', promptPrefix: 'Modern Educational Animation, Flat Illustration, Clean Vector Art, Kok Bisa Style, vibrant palette' },
@@ -84,77 +111,216 @@
           { id: 'cinematic_film', label: 'Cinematic Film', icon: '🎬', promptPrefix: 'Cinematic Film Stills, 35mm Movie Shot, Dynamic Atmospheric Lighting, Moody Composition, Anamorphic Lens' }
         ];
 
-        async function callGeminiAPI(prompt, apiKey, systemInstruction, useSearch = false) {
-          const keyToUse = apiKey && apiKey.trim() !== "" ? apiKey.trim() : DEFAULT_GEMINI_KEY;
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${keyToUse}`;
+        // OPENROUTER FREE MODELS - based on the image
+        const OPENROUTER_FREE_MODELS = [
+            { id: 'openrouter/free', label: 'OpenRouter (Auto-select best free model)', recommended: true },
+            { id: 'inclusionai/ling-3.0-tiny:free', label: 'Ling 3.0 Tiny' },
+            { id: 'poolside/laguna-s-2.1:free', label: 'Laguna S 2.1' },
+            { id: 'poolside/laguna-xs-2.1:free', label: 'Laguna XS 2.1' },
+            { id: 'cohere/north-mini-code:free', label: 'North Mini Code' },
+            { id: 'nvidia/nemotron-3.5-content-safety:free', label: 'Nemotron Content Safety' },
+            { id: 'nvidia/nemotron-3-ultra-550b-a55b:free', label: 'Nemotron 3 Ultra 550B' },
+            { id: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free', label: 'Nemotron Nano Omni 30B' },
+            { id: 'google/gemma-4-26b-a4b-it:free', label: 'Gemma 4 26B' },
+            { id: 'google/gemma-4-31b-it:free', label: 'Gemma 4 31B' },
+            { id: 'nvidia/nemotron-3-super-120b-a12b:free', label: 'Nemotron 3 Super 120B' },
+            { id: 'nvidia/nemotron-3-nano-30b-a3b:free', label: 'Nemotron Nano 30B' },
+            { id: 'nvidia/nemotron-nano-12b-v2-v1:free', label: 'Nemotron Nano 12B v2' },
+            { id: 'nvidia/nemotron-nano-9b-v2:free', label: 'Nemotron Nano 9B v2' },
+            { id: 'openai/gpt-oss-20b:free', label: 'GPT OSS 20B' },
+            { id: 'google/gemini-2.0-flash-exp:free', label: 'Gemini 2.0 Flash (Best Overall)' },
+            { id: 'mistralai/mistral-7b-instruct:free', label: 'Mistral 7B' },
+            { id: 'meta-llama/llama-3.1-8b-instruct:free', label: 'Llama 3.1 8B' },
+        ];
 
-          const requestBody = {
-            contents: [{ role: "user", parts: [{ text: prompt }] }]
-          };
+        // LEGACY MODELS for compatibility
+        const OPENROUTER_PAID_MODELS = [
+            { id: 'meta-llama/llama-3.1-70b-instruct', label: 'Llama 3.1 70B (Premium)' },
+            { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (Premium)' },
+        ];
 
-          if (systemInstruction) {
-            requestBody.systemInstruction = { parts: [{ text: systemInstruction }] };
-          }
+        const API_PROVIDERS = [
+            { id: 'openrouter', label: 'OpenRouter (FREE)', icon: '🌐', recommended: true },
+            { id: 'gemini', label: 'Google Gemini Direct API', icon: '🧠' },
+        ];
 
-          if (useSearch) {
-            requestBody.tools = [{ googleSearch: {} }];
-          }
-
-          const response = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody)
-          });
-
-          if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error?.message || `Gemini API Error: ${response.status}`);
-          }
-
-          const data = await response.json();
-          const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          
-          let sources = [];
-          const groundingChunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks;
-          if (groundingChunks && Array.isArray(groundingChunks)) {
-            sources = groundingChunks
-              .filter(chunk => chunk.web)
-              .map(chunk => ({
-                title: chunk.web.title || chunk.web.uri,
-                uri: chunk.web.uri
-              }));
-          }
-
-          return { text, sources };
+        async function callAI(prompt, apiKey, systemInstruction, provider = 'openrouter', model = null, useSearch = false) {
+            if (provider === 'gemini') {
+                return await callGeminiAPI(prompt, apiKey, systemInstruction, useSearch);
+            } else if (provider === 'openrouter') {
+                return await callOpenRouterAPI(prompt, apiKey, systemInstruction, model, useSearch);
+            }
+            throw new Error("Provider AI tidak dikenal");
         }
 
-        async function generateImagePreview(prompt, apiKey, aspectRatio = "16:9") {
-          const keyToUse = apiKey && apiKey.trim() !== "" ? apiKey.trim() : DEFAULT_GEMINI_KEY;
-          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${keyToUse}`;
-          
-          const payload = {
-            instances: [{ prompt: prompt }],
-            parameters: { 
-              sampleCount: 1,
-              aspectRatio: aspectRatio === "9:16" ? "9:16" : "16:9"
+        async function callGeminiAPI(prompt, apiKey, systemInstruction, useSearch = false) {
+          const keyToUse = apiKey ? apiKey.trim() : "";
+          if (!keyToUse) {
+            throw new Error("API Key Gemini tidak ditemukan. Masukkan API Key Anda.");
+          }
+
+          const models = ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"];
+          let lastError = null;
+
+          for (const model of models) {
+            try {
+              const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${keyToUse}`;
+
+              const requestBody = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+              };
+
+              if (systemInstruction) {
+                requestBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+              }
+
+              if (useSearch) {
+                requestBody.tools = [{ googleSearch: {} }];
+              }
+
+              const response = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(requestBody)
+              });
+
+              if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                const errMsg = errData.error?.message || `HTTP ${response.status}: API Key bermasalah atau kuota terlampaui`;
+                throw new Error(errMsg);
+              }
+
+              const data = await response.json();
+              const parts = data.candidates?.[0]?.content?.parts || [];
+              const text = parts.map(p => p.text).filter(Boolean).join('\n') || "";
+
+              let sources = [];
+              const groundingChunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks;
+              if (groundingChunks && Array.isArray(groundingChunks)) {
+                sources = groundingChunks
+                  .filter(chunk => chunk.web)
+                  .map(chunk => ({
+                    title: chunk.web?.title || chunk.web?.uri || "Sumber Web",
+                    uri: chunk.web?.uri
+                  }));
+              }
+
+              return { text, sources };
+            } catch (err) {
+              lastError = err;
+              console.warn(`Gemini model ${model} gagal:`, err.message);
             }
-          };
-
-          const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          if (!response.ok) {
-            throw new Error(`Imagen API Error: ${response.statusText}`);
           }
 
-          const result = await response.json();
-          if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
-            return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
-          }
-          throw new Error("Gagal memperoleh gambar dari Imagen API");
+          throw lastError || new Error("Gagal mengoperasikan API Gemini. Periksa API Key Anda.");
+        }
+
+        async function callOpenRouterAPI(prompt, apiKey, systemInstruction, model = 'openrouter/free', useSearch = false) {
+            const keyToUse = apiKey ? apiKey.trim() : "";
+            if (!keyToUse) {
+                throw new Error("OpenRouter API Key tidak ditemukan. Dapatkan gratis di https://openrouter.ai/keys");
+            }
+
+            try {
+                const messages = [];
+                
+                if (systemInstruction) {
+                    messages.push({ role: 'system', content: systemInstruction });
+                }
+                
+                messages.push({ role: 'user', content: prompt });
+
+                // Add search capability note if requested
+                let finalPrompt = prompt;
+                if (useSearch) {
+                    finalPrompt = `[Gunakan pengetahuan terbaru Anda] ${prompt}`;
+                    messages[messages.length - 1].content = finalPrompt;
+                }
+
+                const requestBody = {
+                    model: model || 'openrouter/free',
+                    messages: messages,
+                    temperature: 0.7,
+                    max_tokens: 4096,
+                    top_p: 1,
+                    frequency_penalty: 0,
+                    presence_penalty: 0,
+                };
+
+                const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${keyToUse}`,
+                        'HTTP-Referer': window.location.origin,
+                        'X-Title': 'Kok Bisa Studio AI'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+
+                if (!response.ok) {
+                    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    try {
+                        const errData = await response.json();
+                        errorMessage = errData.error?.message || errData.message || errorMessage;
+                    } catch (e) {
+                        const text = await response.text();
+                        errorMessage = text || errorMessage;
+                    }
+                    throw new Error(errorMessage);
+                }
+
+                const data = await response.json();
+                const text = data.choices?.[0]?.message?.content || "";
+
+                if (!text) {
+                    throw new Error("Tidak ada konten dari model AI");
+                }
+
+                return { text, sources: [] };
+            } catch (err) {
+                console.error('OpenRouter API Error:', err);
+                throw err;
+            }
+        }
+
+        // Fallback image generator using Pollinations
+        async function generateImagePreview(prompt, apiKey, aspectRatio = "16:9", provider = 'gemini') {
+            // Try using Imagen if Gemini API key is available
+            if (provider === 'gemini' && apiKey) {
+                try {
+                    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`;
+                    const payload = {
+                        instances: [{ prompt: prompt }],
+                        parameters: { 
+                            sampleCount: 1,
+                            aspectRatio: aspectRatio === "9:16" ? "9:16" : "16:9"
+                        }
+                    };
+
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.predictions?.[0]?.bytesBase64Encoded) {
+                            return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Imagen API gagal, menggunakan generator cadangan:", e);
+                }
+            }
+
+            // Fallback: Pollinations.ai (works without API key)
+            const width = aspectRatio === "9:16" ? 720 : 1280;
+            const height = aspectRatio === "9:16" ? 1280 : 720;
+            const seed = Math.floor(Math.random() * 100000);
+            const cleanPrompt = prompt.substring(0, 200).replace(/[^a-zA-Z0-9\s,.]/g, '');
+            return `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=${width}&height=${height}&seed=${seed}&nologo=true`;
         }
 
         function parseScriptToVisualPrompts(scriptText, visualStyle = VISUAL_STYLES[0].promptPrefix, aspectFormat = "16:9") {
@@ -210,7 +376,7 @@
 
         const CREATE_EMPTY_PROJECT = () => ({
           id: `session-${Date.now()}`,
-          title: "", // Empty default title as requested
+          title: "",
           format: "16:9",
           category: "Fakta Unik",
           mode: "Sedang Viral (Trending Google)",
@@ -230,8 +396,36 @@
         function App() {
           const [activeTab, setActiveTab] = React.useState('editor');
           const [project, setProject] = React.useState(CREATE_EMPTY_PROJECT);
-          const [apiKey, setApiKey] = React.useState(DEFAULT_GEMINI_KEY);
           
+          // API Configuration
+          const [apiProvider, setApiProvider] = React.useState(() => {
+            return localStorage.getItem('ai_provider') || 'openrouter';
+          });
+          
+          const [openRouterModel, setOpenRouterModel] = React.useState(() => {
+            return localStorage.getItem('openrouter_model') || 'openrouter/free';
+          });
+          
+          const [geminiApiKey, setGeminiApiKey] = React.useState(() => {
+            return localStorage.getItem('gemini_api_key') || '';
+          });
+          
+          const [openRouterApiKey, setOpenRouterApiKey] = React.useState(() => {
+            return localStorage.getItem('openrouter_api_key') || '';
+          });
+          
+          const [showApiKeyModal, setShowApiKeyModal] = React.useState(() => {
+            // Show modal if no API key is set for the current provider
+            const hasKey = apiProvider === 'gemini' ? 
+              (localStorage.getItem('gemini_api_key') || '') : 
+              (localStorage.getItem('openrouter_api_key') || '');
+            return !hasKey;
+          });
+          
+          const [showPassword, setShowPassword] = React.useState(false);
+          const [isTestingKey, setIsTestingKey] = React.useState(false);
+          const [keyTestResult, setKeyTestResult] = React.useState(null);
+
           const [isGenerating, setIsGenerating] = React.useState(false);
           const [loadingStepText, setLoadingStepText] = React.useState('');
           const [toast, setToast] = React.useState(null);
@@ -241,9 +435,33 @@
           const [loadingImageId, setLoadingImageId] = React.useState(null);
           const [showResetConfirm, setShowResetConfirm] = React.useState(false);
 
+          // Get active API key
+          const getActiveApiKey = () => {
+            return apiProvider === 'gemini' ? geminiApiKey : openRouterApiKey;
+          };
+
+          // Save API configurations
+          const saveApiConfig = () => {
+            localStorage.setItem('ai_provider', apiProvider);
+            localStorage.setItem('openrouter_model', openRouterModel);
+            localStorage.setItem('gemini_api_key', geminiApiKey.trim());
+            localStorage.setItem('openrouter_api_key', openRouterApiKey.trim());
+          };
+
           const showToast = (message, type = 'info') => {
             setToast({ message, type });
             setTimeout(() => setToast(null), 3500);
+          };
+
+          const ensureApiKeyOrPrompt = () => {
+            const key = getActiveApiKey();
+            if (!key || key.trim() === '') {
+              const providerLabel = apiProvider === 'gemini' ? 'Gemini' : 'OpenRouter';
+              showToast(`API Key ${providerLabel} belum diisi! Silakan masukkan API Key Anda.`, "error");
+              setShowApiKeyModal(true);
+              return false;
+            }
+            return true;
           };
 
           const copyToClipboard = async (text, label = "Teks") => {
@@ -323,23 +541,26 @@
           };
 
           const handleGenerateTopics = async (category, mode) => {
+            if (!ensureApiKeyOrPrompt()) return;
+
             setIsGenerating(true);
-            setLoadingStepText("Mencari tren terbaru di Google Search & menganalisis ide topik viral...");
+            setLoadingStepText("Mencari tren terbaru & menganalisis ide topik viral...");
             setGroundingSources([]);
 
-            const sysPrompt = "Anda adalah AI Content Strategist untuk channel animasi edukasi terpopuler (seperti Kok Bisa / Kurzgesagt). Tugas Anda adalah mencari tren Google terbaru dan memberikan ide topik edukasi sains/pengetahuan yang sedang banyak dicari orang.";
-            const userPrompt = `Gunakan pencarian Google Search untuk menemukan ide-ide topik yang SEDANG TRENDING & VIRAL di internet saat ini mengenai kategori: "${category}" dengan sudut pandang/mode: "${mode}".
+            const sysPrompt = "Anda adalah AI Content Strategist untuk channel animasi edukasi terpopuler (seperti Kok Bisa / Kurzgesagt). Tugas Anda adalah mencari tren terbaru dan memberikan ide topik edukasi sains/pengetahuan yang sedang banyak dicari orang.";
+            const userPrompt = `Gunakan pengetahuan terbaru Anda untuk menemukan ide-ide topik yang SEDANG TRENDING & VIRAL di internet saat ini mengenai kategori: "${category}" dengan sudut pandang/mode: "${mode}".
             
             Buat 6 rekomendasi ide topik pilihan terbaik yang sempurna dan paling diminati penonton saat ini.
             Format respons harus HANYA berupa JSON Array murni tanpa penjelasan tambahan, dengan atribut:
             - title: judul topik yang sangat menarik dan membuat penasaran
             - reason: penjelasan kenapa topik ini sedang trending dan cocok dibuat cerita long-form
             - score: angka 1 sampai 5
-            - badge: contoh "Trending Google #1"
+            - badge: contoh "Trending #1" atau "Viral"
             - recommendedDuration: durasi ideal yang disarankan untuk topik ini (contoh: "45 Detik" atau "12 Menit")`;
 
             try {
-              const { text, sources } = await callGeminiAPI(userPrompt, apiKey, sysPrompt, true);
+              const modelToUse = apiProvider === 'openrouter' ? openRouterModel : null;
+              const { text, sources } = await callAI(userPrompt, getActiveApiKey(), sysPrompt, apiProvider, modelToUse, true);
               setGroundingSources(sources || []);
 
               const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -369,16 +590,18 @@
                   topics: formattedTopics
                 }
               }));
-              showToast("Berhasil menemukan ide topik trending dari Google Search!", "success");
+              showToast("Berhasil menemukan ide topik trending!", "success");
             } catch (err) {
               console.error(err);
-              showToast("Gagal mencari tren Google. Pastikan koneksi internet terhubung.", "error");
+              showToast(err.message || "Gagal mencari tren. Periksa API Key Anda.", "error");
             } finally {
               setIsGenerating(false);
             }
           };
 
           const handleGenerateScript = async (customInst, targetDuration = "10-15 Menit") => {
+            if (!ensureApiKeyOrPrompt()) return;
+
             const topic = project.step1Data.selectedTopic || project.title;
             if (!topic || topic.trim() === "") {
               showToast("Silakan pilih atau ketik judul topik terlebih dahulu di Step 1!", "error");
@@ -414,7 +637,8 @@ Target Durasi: ${targetDuration} (Target kata: sekitar ${estimatedTargetWords} k
 Instruksi Tambahan: ${customInst || 'Buat sangat menarik, alami, mendalam, dan komunikatif.'}`;
 
             try {
-              const { text } = await callGeminiAPI(userPrompt, apiKey, sysPrompt, false);
+              const modelToUse = apiProvider === 'openrouter' ? openRouterModel : null;
+              const { text } = await callAI(userPrompt, getActiveApiKey(), sysPrompt, apiProvider, modelToUse, false);
               const words = text.trim().split(/\s+/).length;
               const estMinutes = Math.ceil(words / 130);
 
@@ -433,13 +657,15 @@ Instruksi Tambahan: ${customInst || 'Buat sangat menarik, alami, mendalam, dan k
               showToast("Naskah narasi mengalir lurus berhasil dibuat!", "success");
             } catch (err) {
               console.error(err);
-              showToast("Gagal menghasilkan naskah cerita.", "error");
+              showToast(err.message || "Gagal menghasilkan naskah cerita.", "error");
             } finally {
               setIsGenerating(false);
             }
           };
 
           const handleModifyScript = async (actionType) => {
+            if (!ensureApiKeyOrPrompt()) return;
+
             if (!project.step2Data.script) {
               showToast("Belum ada naskah untuk diubah.", "error");
               return;
@@ -455,7 +681,8 @@ Instruksi Tambahan: ${customInst || 'Buat sangat menarik, alami, mendalam, dan k
 
             try {
               const sysPrompt = "Anda adalah penulis naskah narasi cerita edukasi. Pertahankan format penceritaan mengalir lurus TANPA JUDUL BAB/BAB 1/BAB 2.";
-              const { text } = await callGeminiAPI(`${promptAction}\n\nNaskah Saat Ini:\n${project.step2Data.script}`, apiKey, sysPrompt, false);
+              const modelToUse = apiProvider === 'openrouter' ? openRouterModel : null;
+              const { text } = await callAI(`${promptAction}\n\nNaskah Saat Ini:\n${project.step2Data.script}`, getActiveApiKey(), sysPrompt, apiProvider, modelToUse, false);
               
               const words = text.trim().split(/\s+/).length;
               const estMinutes = Math.ceil(words / 130);
@@ -473,13 +700,15 @@ Instruksi Tambahan: ${customInst || 'Buat sangat menarik, alami, mendalam, dan k
               syncAllStepsWithScript(text, project.title, project.step3Data.visualStyle);
               showToast(`Naskah berhasil di-${actionType.toLowerCase()}!`, "success");
             } catch (err) {
-              showToast("Gagal memperbarui naskah", "error");
+              showToast(err.message || "Gagal memperbarui naskah", "error");
             } finally {
               setIsGenerating(false);
             }
           };
 
           const handleGenerateAIVisualPrompts = async () => {
+            if (!ensureApiKeyOrPrompt()) return;
+
             if (!project.step2Data.script) {
               showToast("Naskah belum dibuat di Step 2!", "error");
               return;
@@ -516,7 +745,8 @@ ${project.step2Data.script}
 Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
 
             try {
-              const { text } = await callGeminiAPI(userPrompt, apiKey, sysPrompt, false);
+              const modelToUse = apiProvider === 'openrouter' ? openRouterModel : null;
+              const { text } = await callAI(userPrompt, getActiveApiKey(), sysPrompt, apiProvider, modelToUse, false);
               const cleanJson = text.replace(/```json/g, '').replace(/```/g, '').trim();
               let parsedScenes = [];
               try {
@@ -565,7 +795,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
               }
             } catch (err) {
               console.error(err);
-              showToast("Gagal menghasilkan prompt AI visual. Silakan coba lagi.", "error");
+              showToast(err.message || "Gagal menghasilkan prompt AI visual.", "error");
             } finally {
               setIsGenerating(false);
             }
@@ -574,12 +804,12 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
           const handleGenerateSingleImagePreview = async (promptId, promptText) => {
             setLoadingImageId(promptId);
             try {
-              const imgUrl = await generateImagePreview(promptText, apiKey, project.format);
+              const imgUrl = await generateImagePreview(promptText, getActiveApiKey(), project.format, apiProvider);
               setImagePreviews(prev => ({ ...prev, [promptId]: imgUrl }));
-              showToast(`Preview gambar AI (${project.format}) berhasil dibuat!`, "success");
+              showToast(`Preview gambar AI (${project.format}) berhasil dimuat!`, "success");
             } catch (err) {
               console.error(err);
-              showToast("Gagal membuat preview gambar. Cek API Key Anda.", "error");
+              showToast("Gagal memuat preview gambar. Coba lagi nanti.", "error");
             } finally {
               setLoadingImageId(null);
             }
@@ -594,6 +824,47 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
             showToast("Sesi kerja baru berhasil dimulai!", "info");
           };
 
+          // Test API Key
+          const testApiKey = async () => {
+            const key = getActiveApiKey();
+            if (!key || key.trim() === '') {
+              showToast('Masukkan API Key terlebih dahulu!', 'error');
+              return;
+            }
+
+            setIsTestingKey(true);
+            setKeyTestResult(null);
+
+            try {
+              const testPrompt = 'Balas dengan "OK" jika API Key ini berfungsi.';
+              const modelToUse = apiProvider === 'openrouter' ? openRouterModel : null;
+              const response = await callAI(testPrompt, key, null, apiProvider, modelToUse, false);
+              
+              if (response.text && response.text.length > 0) {
+                setKeyTestResult({ success: true, message: '✅ API Key berfungsi dengan baik!' });
+                showToast('API Key valid dan berfungsi!', 'success');
+              }
+            } catch (err) {
+              setKeyTestResult({ success: false, message: `❌ Error: ${err.message}` });
+              showToast(`API Key tidak valid: ${err.message}`, 'error');
+            } finally {
+              setIsTestingKey(false);
+            }
+          };
+
+          // Helper to get model display name
+          const getModelDisplayName = () => {
+            if (apiProvider === 'gemini') return 'Google Gemini';
+            const model = OPENROUTER_FREE_MODELS.find(m => m.id === openRouterModel);
+            if (model) return model.label;
+            return openRouterModel;
+          };
+
+          // Get all models (free + paid)
+          const getAllModels = () => {
+            return [...OPENROUTER_FREE_MODELS, ...OPENROUTER_PAID_MODELS];
+          };
+
           return (
             <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col">
               {/* Toast Notification */}
@@ -605,6 +876,280 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                 }`}>
                   {toast.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <AlertCircle className="w-4 h-4 text-amber-400" />}
                   <span>{toast.message}</span>
+                </div>
+              )}
+
+              {/* API Key Modal Dialog - Enhanced like the image */}
+              {showApiKeyModal && (
+                <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-5 shadow-xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center space-x-3 border-b border-slate-200 pb-4">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <Server className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-lg">API SETTINGS</h3>
+                        <p className="text-xs text-slate-500">Konfigurasi koneksi ke AI provider</p>
+                      </div>
+                    </div>
+
+                    {/* Provider Selection - Like image */}
+                    <div className="space-y-3">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        Pilih API Provider
+                      </label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {API_PROVIDERS.map((provider) => {
+                          const isSelected = apiProvider === provider.id;
+                          return (
+                            <button
+                              key={provider.id}
+                              type="button"
+                              onClick={() => {
+                                setApiProvider(provider.id);
+                                localStorage.setItem('ai_provider', provider.id);
+                              }}
+                              className={`api-card p-4 rounded-xl border-2 text-left transition ${
+                                isSelected 
+                                  ? 'selected border-indigo-500 bg-indigo-50' 
+                                  : 'border-slate-200 hover:border-slate-300 bg-white'
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center space-x-3">
+                                  <span className="text-2xl">{provider.icon}</span>
+                                  <div>
+                                    <div className="font-semibold text-slate-900 text-sm flex items-center space-x-2">
+                                      {provider.label}
+                                      {provider.recommended && (
+                                        <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                          REKOMENDASI
+                                        </span>
+                                      )}
+                                    </div>
+                                    {provider.id === 'openrouter' && (
+                                      <p className="text-[10px] text-emerald-600 font-medium">Gratis - Banyak Model</p>
+                                    )}
+                                    {provider.id === 'gemini' && (
+                                      <p className="text-[10px] text-slate-500">Perlu API Key Google</p>
+                                    )}
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <CheckBadge className="w-5 h-5 text-indigo-600 fill-indigo-600" />
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* OpenRouter Model Selection - Like image */}
+                    {apiProvider === 'openrouter' && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            Pilih Model AI
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 px-2 py-0.5 rounded-full">
+                              {OPENROUTER_FREE_MODELS.filter(m => m.id.includes('free') || m.id === 'openrouter/free').length} Model Free
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Model Grid - like image showing free models */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
+                          {getAllModels().map((model) => {
+                            const isSelected = openRouterModel === model.id;
+                            const isFree = model.id.includes(':free') || model.id === 'openrouter/free';
+                            return (
+                              <button
+                                key={model.id}
+                                type="button"
+                                onClick={() => {
+                                  setOpenRouterModel(model.id);
+                                  localStorage.setItem('openrouter_model', model.id);
+                                }}
+                                className={`model-tag px-3 py-2 rounded-lg border text-left text-xs font-medium transition flex items-center justify-between ${
+                                  isSelected 
+                                    ? 'selected bg-indigo-600 text-white border-indigo-600' 
+                                    : `border-slate-200 hover:border-indigo-300 ${isFree ? 'bg-white' : 'bg-slate-50'}`
+                                }`}
+                              >
+                                <span className={isSelected ? 'text-white' : 'text-slate-700'}>
+                                  {model.label}
+                                  {model.recommended && (
+                                    <span className={`ml-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
+                                      isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'
+                                    }`}>
+                                      BEST
+                                    </span>
+                                  )}
+                                  {!isFree && !isSelected && (
+                                    <span className="ml-1.5 text-[8px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                                      PREMIUM
+                                    </span>
+                                  )}
+                                </span>
+                                {isSelected && (
+                                  <Check className="w-3 h-3 text-white" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* API Key Input - Like image */}
+                    <div className="space-y-2">
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        {apiProvider === 'openrouter' ? 'OpenRouter API Key (sk-or-v1-...)' : 'Gemini API Key (AIzaSy...)'}
+                      </label>
+                      <div className="relative">
+                        <input 
+                          type={showPassword ? "text" : "password"} 
+                          placeholder={apiProvider === 'openrouter' ? 'sk-or-v1-...' : 'AIzaSy...'}
+                          value={getActiveApiKey()}
+                          onChange={(e) => {
+                            if (apiProvider === 'openrouter') {
+                              setOpenRouterApiKey(e.target.value);
+                            } else {
+                              setGeminiApiKey(e.target.value);
+                            }
+                          }}
+                          className="w-full text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl p-3 pr-10 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                        />
+                        <button 
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+
+                      {/* Action Buttons - Like image */}
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={testApiKey}
+                          disabled={isTestingKey}
+                          className={`px-4 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 ${
+                            isTestingKey 
+                              ? 'bg-slate-200 text-slate-500 cursor-not-allowed' 
+                              : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                          }`}
+                        >
+                          {isTestingKey ? (
+                            <RefreshCw className="w-3 h-3 animate-spin" />
+                          ) : (
+                            <Shield className="w-3 h-3" />
+                          )}
+                          <span>Test Key</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Refresh model list (just re-render)
+                            showToast('Model list refreshed!', 'info');
+                          }}
+                          className="px-4 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition flex items-center space-x-1.5"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Refresh Model</span>
+                        </button>
+
+                        {apiProvider === 'openrouter' && (
+                          <a
+                            href="https://openrouter.ai/keys"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-4 py-1.5 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition flex items-center space-x-1.5"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Ambil Key</span>
+                          </a>
+                        )}
+
+                        {apiProvider === 'gemini' && (
+                          <a
+                            href="https://aistudio.google.com/app/apikey"
+                            target="_blank"
+                            rel="noreferrer"
+                            className="px-4 py-1.5 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition flex items-center space-x-1.5"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                            <span>Ambil Key</span>
+                          </a>
+                        )}
+
+                        {getActiveApiKey() && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (apiProvider === 'openrouter') {
+                                setOpenRouterApiKey('');
+                                localStorage.removeItem('openrouter_api_key');
+                              } else {
+                                setGeminiApiKey('');
+                                localStorage.removeItem('gemini_api_key');
+                              }
+                              showToast('API Key dihapus', 'info');
+                            }}
+                            className="px-4 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition"
+                          >
+                            Hapus
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Test Result */}
+                      {keyTestResult && (
+                        <div className={`p-3 rounded-xl text-xs font-medium ${
+                          keyTestResult.success 
+                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                            : 'bg-red-50 text-red-800 border border-red-200'
+                        }`}>
+                          {keyTestResult.message}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Save & Close */}
+                    <div className="flex items-center space-x-3 pt-2 border-t border-slate-200">
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          saveApiConfig();
+                          if (!getActiveApiKey().trim()) {
+                            showToast(`Masukkan API Key ${apiProvider === 'gemini' ? 'Gemini' : 'OpenRouter'} Anda`, "error");
+                            return;
+                          }
+                          setShowApiKeyModal(false);
+                          showToast(`API Key ${apiProvider === 'gemini' ? 'Gemini' : 'OpenRouter'} disimpan! (${getModelDisplayName()})`, "success");
+                        }}
+                        className="flex-1 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md"
+                      >
+                        Simpan & Gunakan
+                      </button>
+                    </div>
+
+                    {/* Info */}
+                    {apiProvider === 'openrouter' && (
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800">
+                        <p className="font-bold">💡 OpenRouter FREE Models:</p>
+                        <ul className="list-disc pl-4 mt-1 space-y-0.5 text-emerald-700">
+                          <li><strong>openrouter/free</strong> - Auto-select model terbaik yang tersedia</li>
+                          <li>Semua model dengan label <strong>FREE</strong> bisa digunakan tanpa biaya</li>
+                          <li>Banyak pilihan dari berbagai provider (Google, NVIDIA, Meta, dll)</li>
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -638,17 +1183,21 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
               )}
 
               {/* Main Top Header Bar */}
-              <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 lg:px-6 py-3 flex items-center justify-between shadow-xs">
+              <header className="bg-white border-b border-slate-200 sticky top-0 z-30 px-4 lg:px-6 py-3 flex items-center justify-between shadow-xs flex-wrap gap-2">
                 <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
                     <Sparkles className="w-5 h-5 animate-pulse" />
                   </div>
                   <div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2 flex-wrap">
                       <h1 className="font-bold text-slate-900 text-base sm:text-lg tracking-tight">Kok Bisa? Studio AI</h1>
                       <span className="bg-emerald-50 text-emerald-700 text-[11px] font-bold px-2 py-0.5 rounded-full border border-emerald-200 flex items-center space-x-1">
                         <Globe className="w-3 h-3" />
-                        <span>Google Search Live</span>
+                        <span>{apiProvider === 'openrouter' ? 'OpenRouter Free' : 'Gemini'}</span>
+                      </span>
+                      <span className="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-indigo-200 flex items-center space-x-1">
+                        <Brain className="w-3 h-3" />
+                        <span className="max-w-[120px] truncate">{getModelDisplayName()}</span>
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 hidden sm:block">AI Workflow Generator Naskah Narasi Edukasi Mengalir</p>
@@ -656,12 +1205,25 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                 </div>
 
                 <div className="flex items-center space-x-2">
+                  {/* API Key Status Button */}
+                  <button 
+                    onClick={() => setShowApiKeyModal(true)}
+                    className={`flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl border transition ${
+                      getActiveApiKey() 
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100' 
+                        : 'bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100 animate-pulse'
+                    }`}
+                  >
+                    <Key className="w-3.5 h-3.5" />
+                    <span>{getActiveApiKey() ? '🔗 Terhubung' : '⚠️ Set API Key'}</span>
+                  </button>
+
                   <button 
                     onClick={() => setShowResetConfirm(true)}
                     className="flex items-center space-x-1.5 text-xs font-medium text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2 rounded-xl transition border border-red-200"
                   >
                     <RefreshCw className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Reset Sesi & Mulai Baru</span>
+                    <span className="hidden sm:inline">Reset Sesi</span>
                   </button>
                 </div>
               </header>
@@ -675,26 +1237,27 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                     
                     <button 
                       onClick={() => setActiveTab('editor')}
-                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition ${activeTab === 'editor' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition ${activeTab === 'editor' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
-                      <Zap className="w-4 h-4 text-blue-600" />
+                      <Zap className="w-4 h-4 text-indigo-600" />
                       <span>Workflow Editor</span>
                     </button>
 
                     <button 
                       onClick={() => setActiveTab('settings')}
-                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition ${activeTab === 'settings' ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}
+                      className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition ${activeTab === 'settings' ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-slate-600 hover:bg-slate-100'}`}
                     >
-                      <Settings className="w-4 h-4 text-slate-500" />
+                      <Server className="w-4 h-4 text-slate-500" />
                       <span>Pengaturan API</span>
                     </button>
                   </div>
 
                   <div className="p-4 border-t border-slate-100 bg-slate-50/50">
                     <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs space-y-1.5">
-                      <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block">Status Sesi Saat Ini</span>
+                      <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider block">Status Sesi Saat Ini</span>
                       <p className="text-xs font-semibold text-slate-800 line-clamp-1">{project.title || "Topik Belum Dipilih"}</p>
                       <p className="text-[11px] text-slate-500">Step {project.currentStep} dari 6</p>
+                      <p className="text-[10px] text-slate-400 font-medium">AI: {getModelDisplayName()}</p>
                     </div>
                   </div>
                 </aside>
@@ -709,11 +1272,11 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                       <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs overflow-x-auto">
                         <div className="flex items-center justify-between min-w-[650px] px-2">
                           {[
-                            { num: 1, label: 'Tren Google' },
+                            { num: 1, label: 'Tren & Topik' },
                             { num: 2, label: 'Naskah Narasi' },
                             { num: 3, label: 'Visual Prompts' },
                             { num: 4, label: 'Video Motion' },
-                            { num: 5, label: 'Thumbnail Studio' },
+                            { num: 5, label: 'Thumbnail' },
                             { num: 6, label: 'YouTube SEO' },
                           ].map((step, idx) => {
                             const isActive = project.currentStep === step.num;
@@ -724,14 +1287,14 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                   onClick={() => setStep(step.num)}
                                   className={`flex items-center space-x-2 px-3 py-2 rounded-xl text-xs transition ${
                                     isActive 
-                                      ? 'bg-blue-600 text-white font-semibold shadow-sm' 
+                                      ? 'bg-indigo-600 text-white font-semibold shadow-sm' 
                                       : isPassed 
-                                      ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium' 
+                                      ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium' 
                                       : 'text-slate-500 hover:bg-slate-100'
                                   }`}
                                 >
                                   <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] ${
-                                    isActive ? 'bg-white text-blue-600 font-bold' : isPassed ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-600'
+                                    isActive ? 'bg-white text-indigo-600 font-bold' : isPassed ? 'bg-indigo-200 text-indigo-800' : 'bg-slate-200 text-slate-600'
                                   }`}>
                                     {isPassed ? <Check className="w-3 h-3" /> : step.num}
                                   </div>
@@ -750,12 +1313,12 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                             <div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 1 dari 6</span>
+                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 1 dari 6</span>
                                 <span className="text-slate-300">•</span>
                                 <span className="text-xs text-slate-500">Format Konten & Pencarian Tren</span>
                               </div>
                               <h2 className="text-xl font-bold text-slate-900 mt-1">Setup Format & Topic Discovery</h2>
-                              <p className="text-sm text-slate-500">Pilih format rasio konten terlebih dahulu, lalu cari ide topik yang sedang tren di Google.</p>
+                              <p className="text-sm text-slate-500">Pilih format rasio konten terlebih dahulu, lalu cari ide topik yang sedang tren.</p>
                             </div>
                           </div>
 
@@ -780,12 +1343,12 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 }}
                                 className={`p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${
                                   project.format === '16:9' 
-                                    ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' 
+                                    ? 'bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm' 
                                     : 'bg-slate-50 border-slate-200 hover:bg-white'
                                 }`}
                               >
                                 <div className={`w-9 h-6 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[9px] mt-0.5 ${
-                                  project.format === '16:9' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'
+                                  project.format === '16:9' ? 'border-indigo-600 bg-indigo-100 text-indigo-700' : 'border-slate-400 text-slate-500'
                                 }`}>
                                   16:9
                                 </div>
@@ -813,12 +1376,12 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 }}
                                 className={`p-4 rounded-2xl border text-left flex items-start space-x-3 transition ${
                                   project.format === '9:16' 
-                                    ? 'bg-blue-50/80 border-blue-500 ring-2 ring-blue-500/20 shadow-sm' 
+                                    ? 'bg-indigo-50/80 border-indigo-500 ring-2 ring-indigo-500/20 shadow-sm' 
                                     : 'bg-slate-50 border-slate-200 hover:bg-white'
                                 }`}
                               >
                                 <div className={`w-5 h-8 border-2 rounded-md flex-shrink-0 flex items-center justify-center font-bold text-[8px] ${
-                                  project.format === '9:16' ? 'border-blue-600 bg-blue-100 text-blue-700' : 'border-slate-400 text-slate-500'
+                                  project.format === '9:16' ? 'border-indigo-600 bg-indigo-100 text-indigo-700' : 'border-slate-400 text-slate-500'
                                 }`}>
                                   9:16
                                 </div>
@@ -844,7 +1407,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 placeholder="Ketik topik Anda sendiri atau klik tombol pencarian tren di bawah..."
                                 value={project.title}
                                 onChange={(e) => setProject({ ...project, title: e.target.value, step1Data: { ...project.step1Data, selectedTopic: e.target.value } })}
-                                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                               />
                             </div>
 
@@ -854,7 +1417,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 <select 
                                   value={project.category}
                                   onChange={(e) => setProject({ ...project, category: e.target.value })}
-                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
+                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-800"
                                 >
                                   <option value="Fakta Unik">💡 Fakta Unik</option>
                                   <option value="Misteri Sains">🔍 Misteri Sains</option>
@@ -875,9 +1438,9 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 <select 
                                   value={project.mode}
                                   onChange={(e) => setProject({ ...project, mode: e.target.value })}
-                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                 >
-                                  <option value="Sedang Viral (Trending Google)">🔥 Sedang Viral (Trending Google)</option>
+                                  <option value="Sedang Viral (Trending Google)">🔥 Sedang Viral</option>
                                   <option value="Mind-Blowing & Eksistensial">🤯 Mind-Blowing & Eksistensial</option>
                                   <option value="Pengandaian (What If)">❓ Pengandaian (What If)</option>
                                   <option value="Perspektif Orang Pertama (POV)">👁️ Perspektif Orang Pertama (POV)</option>
@@ -889,10 +1452,10 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 <button 
                                   onClick={() => handleGenerateTopics(project.category, project.mode)}
                                   disabled={isGenerating}
-                                  className="w-full flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs py-2.5 px-4 rounded-xl shadow-md transition disabled:opacity-50"
+                                  className="w-full flex items-center justify-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs py-2.5 px-4 rounded-xl shadow-md transition disabled:opacity-50"
                                 >
                                   {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Globe className="w-4 h-4" />}
-                                  <span>Cari Tren Google</span>
+                                  <span>Cari Tren</span>
                                 </button>
                               </div>
                             </div>
@@ -901,8 +1464,8 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           {groundingSources.length > 0 && (
                             <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs space-y-1.5">
                               <div className="flex items-center space-x-1.5 text-slate-700 font-semibold">
-                                <Globe className="w-3.5 h-3.5 text-blue-600" />
-                                <span>Sumber Pencarian Web Google:</span>
+                                <Globe className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>Sumber Pencarian Web:</span>
                               </div>
                               <div className="flex flex-wrap gap-2 pt-1">
                                 {groundingSources.map((src, i) => (
@@ -911,7 +1474,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                     href={src.uri} 
                                     target="_blank" 
                                     rel="noreferrer" 
-                                    className="bg-white border border-slate-200 hover:border-blue-300 text-blue-600 px-2.5 py-1 rounded-lg text-[11px] flex items-center space-x-1"
+                                    className="bg-white border border-slate-200 hover:border-indigo-300 text-indigo-600 px-2.5 py-1 rounded-lg text-[11px] flex items-center space-x-1"
                                   >
                                     <span className="line-clamp-1">{src.title}</span>
                                     <ExternalLink className="w-2.5 h-2.5" />
@@ -923,7 +1486,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
 
                           <div className="space-y-3 pt-2">
                             <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center space-x-2">
-                              <TrendingUp className="w-4 h-4 text-blue-600" />
+                              <TrendingUp className="w-4 h-4 text-indigo-600" />
                               <span>Rekomendasi Topik Trending ({project.step1Data.topics.length})</span>
                             </h3>
 
@@ -931,7 +1494,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                               <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                                 <Search className="w-8 h-8 text-slate-300 mx-auto mb-2" />
                                 <p className="text-xs font-medium text-slate-600">Belum ada topik yang ditemukan.</p>
-                                <p className="text-[11px] text-slate-400 mt-0.5">Klik "Cari Tren Google" di atas atau ketik judul Anda secara langsung.</p>
+                                <p className="text-[11px] text-slate-400 mt-0.5">Klik "Cari Tren" di atas atau ketik judul Anda secara langsung.</p>
                               </div>
                             ) : (
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -942,13 +1505,13 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                       key={t.id || idx}
                                       className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
                                         isSelected 
-                                          ? 'bg-blue-50/70 border-blue-500 shadow-sm ring-1 ring-blue-500' 
+                                          ? 'bg-indigo-50/70 border-indigo-500 shadow-sm ring-1 ring-indigo-500' 
                                           : 'bg-white border-slate-200 hover:border-slate-300'
                                       }`}
                                     >
                                       <div>
                                         <div className="flex items-center justify-between mb-2">
-                                          <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">{t.badge || `Trending #${idx + 1}`}</span>
+                                          <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">{t.badge || `Trending #${idx + 1}`}</span>
                                           <div className="flex items-center text-amber-400">
                                             {[...Array(Math.min(5, Math.max(1, Math.round(Number(t.score) || 5))))].map((_, i) => (
                                               <Star key={i} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
@@ -972,7 +1535,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                         }}
                                         className={`w-full text-xs font-semibold py-2 rounded-xl border transition ${
                                           isSelected 
-                                            ? 'bg-blue-600 text-white border-blue-600' 
+                                            ? 'bg-indigo-600 text-white border-indigo-600' 
                                             : 'bg-slate-50 hover:bg-slate-100 text-slate-700 border-slate-200'
                                         }`}
                                       >
@@ -1003,7 +1566,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                             <div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 2 dari 6</span>
+                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 2 dari 6</span>
                                 <span className="text-slate-300">•</span>
                                 <span className="text-xs text-slate-500">Naskah Narasi Alami</span>
                               </div>
@@ -1012,16 +1575,16 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                             </div>
                           </div>
 
-                          <div className="bg-blue-50/60 border border-blue-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
+                          <div className="bg-indigo-50/60 border border-indigo-200 rounded-2xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3">
                             <div>
-                              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">Topik Terpilih ({project.category})</span>
+                              <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-wider">Topik Terpilih ({project.category})</span>
                               <h3 className="font-bold text-slate-900 text-base">{project.step1Data.selectedTopic || project.title || "Belum ada topik terpilih"}</h3>
                             </div>
                             
                             <button 
                               onClick={() => handleGenerateScript(project.step2Data.customInstruction, project.step2Data.targetDuration)}
                               disabled={isGenerating}
-                              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition disabled:opacity-50 whitespace-nowrap self-start md:self-auto"
+                              className="flex items-center space-x-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition disabled:opacity-50 whitespace-nowrap self-start md:self-auto"
                             >
                               {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
                               <span>Generate Naskah Narasi</span>
@@ -1034,7 +1597,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 <label className="block text-xs font-semibold text-slate-700">
                                   Target Durasi Video ({project.format === '9:16' ? 'Shorts 9:16' : 'Long-form 16:9'})
                                 </label>
-                                <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                                <span className="text-[10px] font-medium text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
                                   Bisa diketik manual
                                 </span>
                               </div>
@@ -1045,7 +1608,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                   value={project.step2Data.targetDuration}
                                   onChange={(e) => setProject({ ...project, step2Data: { ...project.step2Data, targetDuration: e.target.value } })}
                                   placeholder={project.format === '9:16' ? "Ketik durasi (contoh: 45 Detik, 1 Menit)..." : "Ketik durasi (contoh: 12 Menit, 15 Menit)..."}
-                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-medium text-slate-800"
+                                  className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-2.5 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-slate-800"
                                 />
 
                                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -1058,7 +1621,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                         onClick={() => setProject(prev => ({ ...prev, step2Data: { ...prev.step2Data, targetDuration: dur } }))}
                                         className={`text-[10px] px-2 py-0.5 rounded-lg border transition ${
                                           project.step2Data.targetDuration === dur 
-                                            ? 'bg-blue-600 text-white border-blue-600 font-semibold' 
+                                            ? 'bg-indigo-600 text-white border-indigo-600 font-semibold' 
                                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                                         }`}
                                       >
@@ -1073,7 +1636,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                         onClick={() => setProject(prev => ({ ...prev, step2Data: { ...prev.step2Data, targetDuration: dur } }))}
                                         className={`text-[10px] px-2 py-0.5 rounded-lg border transition ${
                                           project.step2Data.targetDuration === dur 
-                                            ? 'bg-blue-600 text-white border-blue-600 font-semibold' 
+                                            ? 'bg-indigo-600 text-white border-indigo-600 font-semibold' 
                                             : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
                                         }`}
                                       >
@@ -1121,9 +1684,16 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                   - Ringkas
                                 </button>
                                 <button 
+                                  onClick={() => handleModifyScript('Improve')}
+                                  disabled={isGenerating || !project.step2Data.script}
+                                  className="text-[11px] font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg transition disabled:opacity-50"
+                                >
+                                  ✨ Improve
+                                </button>
+                                <button 
                                   onClick={() => copyToClipboard(project.step2Data.script, "Naskah")}
                                   disabled={!project.step2Data.script}
-                                  className="text-[11px] font-medium bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1 rounded-lg transition disabled:opacity-50 flex items-center space-x-1"
+                                  className="text-[11px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-lg transition disabled:opacity-50 flex items-center space-x-1"
                                 >
                                   <Copy className="w-3 h-3" />
                                   <span>Salin</span>
@@ -1150,7 +1720,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                 }));
                                 syncAllStepsWithScript(val, project.title, project.step3Data.visualStyle);
                               }}
-                              className="w-full text-xs font-sans bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed text-slate-800"
+                              className="w-full text-xs font-sans bg-slate-50 border border-slate-200 rounded-2xl p-4 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none leading-relaxed text-slate-800"
                             />
                           </div>
 
@@ -1180,7 +1750,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                             <div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 3 dari 6</span>
+                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 3 dari 6</span>
                                 <span className="text-slate-300">•</span>
                                 <span className="text-xs text-slate-500">Image Generation Prompts</span>
                               </div>
@@ -1191,10 +1761,10 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                             <button 
                               onClick={handleGenerateAIVisualPrompts}
                               disabled={isGenerating || !project.step2Data.script}
-                              className="flex items-center space-x-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition disabled:opacity-50 whitespace-nowrap"
+                              className="flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium text-xs px-4 py-2.5 rounded-xl shadow-md transition disabled:opacity-50 whitespace-nowrap"
                             >
                               {isGenerating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4 text-amber-300" />}
-                              <span>Generate Prompt AI Sinematik (Gemini)</span>
+                              <span>Generate Prompt AI Sinematik</span>
                             </button>
                           </div>
 
@@ -1207,7 +1777,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                               </label>
                               <button 
                                 onClick={() => syncAllStepsWithScript(project.step2Data.script, project.title, project.step3Data.visualStyle)}
-                                className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center space-x-1"
+                                className="text-xs text-indigo-600 hover:text-indigo-700 font-semibold flex items-center space-x-1"
                               >
                                 <RefreshCw className="w-3.5 h-3.5" />
                                 <span>Reset/Sinkronkan Dasar</span>
@@ -1269,7 +1839,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                   <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-2">
                                       <span className="bg-slate-200 text-slate-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Scene {vp.sceneNum}</span>
-                                      <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Rasio {project.format}</span>
+                                      <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full">Rasio {project.format}</span>
                                     </div>
                                     
                                     <div className="flex items-center space-x-2">
@@ -1304,7 +1874,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                     }`}>
                                       <img src={imagePreviews[vp.id]} alt="AI Preview" className="w-full h-full object-cover" />
                                       <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
-                                        Imagen 4 ({project.format})
+                                        Preview Visual ({project.format})
                                       </span>
                                     </div>
                                   )}
@@ -1333,7 +1903,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                             <div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 4 dari 6</span>
+                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 4 dari 6</span>
                                 <span className="text-slate-300">•</span>
                                 <span className="text-xs text-slate-500">Runway / Sora / Luma Animation</span>
                               </div>
@@ -1352,7 +1922,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                               project.step4Data.videoPrompts.map((vid) => (
                                 <div key={vid.id} className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
                                   <div className="flex items-center justify-between">
-                                    <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Motion Scene {vid.sceneNum}</span>
+                                    <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full">Motion Scene {vid.sceneNum}</span>
                                     
                                     <button 
                                       onClick={() => copyToClipboard(vid.prompt, `Motion Prompt ${vid.sceneNum}`)}
@@ -1391,7 +1961,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                             <div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 5 dari 6</span>
+                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 5 dari 6</span>
                                 <span className="text-slate-300">•</span>
                                 <span className="text-xs text-slate-500">Desain Thumbnail & Teks CTR</span>
                               </div>
@@ -1405,7 +1975,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                               <label className="text-xs font-bold text-slate-700">Prompt Siap Pakai Desain Thumbnail</label>
                               <button 
                                 onClick={() => copyToClipboard(project.step5Data.readyPrompt, "Prompt Thumbnail")}
-                                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center space-x-1"
+                                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 flex items-center space-x-1"
                               >
                                 <Copy className="w-3 h-3" />
                                 <span>Salin Prompt</span>
@@ -1440,7 +2010,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                             <div>
                               <div className="flex items-center space-x-2">
-                                <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">Step 6 dari 6</span>
+                                <span className="text-xs font-bold text-indigo-600 uppercase tracking-wider">Step 6 dari 6</span>
                                 <span className="text-slate-300">•</span>
                                 <span className="text-xs text-slate-500">Metadata Publikasi YouTube</span>
                               </div>
@@ -1457,7 +2027,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                                   <span className="text-slate-800">{t}</span>
                                   <button 
                                     onClick={() => copyToClipboard(t, `Judul ${idx + 1}`)}
-                                    className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center space-x-1"
+                                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 flex items-center space-x-1"
                                   >
                                     <Copy className="w-3 h-3" />
                                     <span>Salin</span>
@@ -1472,7 +2042,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                               <label className="text-xs font-bold text-slate-700">Deskripsi Video YouTube</label>
                               <button 
                                 onClick={() => copyToClipboard(project.step6Data.videoDescription, "Deskripsi Video")}
-                                className="text-[11px] font-semibold text-blue-600 hover:text-blue-700 flex items-center space-x-1"
+                                className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-700 flex items-center space-x-1"
                               >
                                 <Copy className="w-3 h-3" />
                                 <span>Salin Deskripsi</span>
@@ -1490,7 +2060,7 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <label className="text-xs font-bold text-slate-700">Hashtags</label>
-                              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-blue-600">
+                              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-indigo-600">
                                 {project.step6Data.hashtags || '#Sains #Edukasi #KokBisa'}
                               </div>
                             </div>
@@ -1524,34 +2094,236 @@ Buat daftar prompt visual sinematik per adegan dalam format JSON Array murni.`;
                     </div>
                   )}
 
+                  {/* SETTINGS TAB - Now uses the same enhanced API settings */}
                   {activeTab === 'settings' && (
                     <div className="max-w-2xl mx-auto bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-6">
                       <div>
                         <h2 className="text-xl font-bold text-slate-900">Pengaturan API & Konektivitas</h2>
-                        <p className="text-xs text-slate-500">Atur API Key kustom Anda jika ingin menggunakan kuota Anda sendiri untuk Gemini 2.5 Flash & Imagen 4.</p>
+                        <p className="text-xs text-slate-500">Pilih provider AI dan atur API Key untuk menghubungkan ke model AI.</p>
                       </div>
 
+                      {/* Reuse the same API settings UI */}
                       <div className="space-y-4">
+                        {/* Provider Selection */}
                         <div>
-                          <label className="block text-xs font-bold text-slate-700 mb-1">Gemini API Key Kustom (Opsional)</label>
-                          <input 
-                            type="password" 
-                            placeholder="Masukkan Gemini API Key (biarkan kosong untuk kunci bawaan sistem)"
-                            value={apiKey}
-                            onChange={(e) => setApiKey(e.target.value)}
-                            className="w-full text-xs bg-slate-50 border border-slate-200 rounded-xl p-3 focus:bg-white outline-none font-mono"
-                          />
-                          <p className="text-[11px] text-slate-400 mt-1">Sistem secara otomatis menginjeksikan API Key jika dikosongkan.</p>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Pilih AI Provider</label>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {API_PROVIDERS.map((provider) => {
+                              const isSelected = apiProvider === provider.id;
+                              return (
+                                <button
+                                  key={provider.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setApiProvider(provider.id);
+                                    localStorage.setItem('ai_provider', provider.id);
+                                  }}
+                                  className={`api-card p-4 rounded-xl border-2 text-left transition ${
+                                    isSelected 
+                                      ? 'selected border-indigo-500 bg-indigo-50' 
+                                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                                  }`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center space-x-3">
+                                      <span className="text-2xl">{provider.icon}</span>
+                                      <div>
+                                        <div className="font-semibold text-slate-900 text-sm flex items-center space-x-2">
+                                          {provider.label}
+                                          {provider.recommended && (
+                                            <span className="bg-emerald-100 text-emerald-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                              REKOMENDASI
+                                            </span>
+                                          )}
+                                        </div>
+                                        {provider.id === 'openrouter' && (
+                                          <p className="text-[10px] text-emerald-600 font-medium">Gratis - Banyak Model</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    {isSelected && (
+                                      <CheckBadge className="w-5 h-5 text-indigo-600 fill-indigo-600" />
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="pt-4 border-t border-slate-100 flex justify-end">
-                        <button 
-                          onClick={() => showToast("Pengaturan berhasil disimpan!", "success")}
-                          className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium px-5 py-2.5 rounded-xl transition"
-                        >
-                          Simpan Pengaturan
-                        </button>
+                        {/* OpenRouter Model Selection */}
+                        {apiProvider === 'openrouter' && (
+                          <div>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Pilih Model AI</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-1">
+                              {getAllModels().map((model) => {
+                                const isSelected = openRouterModel === model.id;
+                                const isFree = model.id.includes(':free') || model.id === 'openrouter/free';
+                                return (
+                                  <button
+                                    key={model.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setOpenRouterModel(model.id);
+                                      localStorage.setItem('openrouter_model', model.id);
+                                    }}
+                                    className={`model-tag px-3 py-2 rounded-lg border text-left text-xs font-medium transition flex items-center justify-between ${
+                                      isSelected 
+                                        ? 'selected bg-indigo-600 text-white border-indigo-600' 
+                                        : `border-slate-200 hover:border-indigo-300 ${isFree ? 'bg-white' : 'bg-slate-50'}`
+                                    }`}
+                                  >
+                                    <span className={isSelected ? 'text-white' : 'text-slate-700'}>
+                                      {model.label}
+                                      {model.recommended && (
+                                        <span className={`ml-1.5 text-[8px] font-bold px-1.5 py-0.5 rounded-full ${
+                                          isSelected ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'
+                                        }`}>
+                                          BEST
+                                        </span>
+                                      )}
+                                      {!isFree && !isSelected && (
+                                        <span className="ml-1.5 text-[8px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+                                          PREMIUM
+                                        </span>
+                                      )}
+                                    </span>
+                                    {isSelected && (
+                                      <Check className="w-3 h-3 text-white" />
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* API Key Input */}
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            {apiProvider === 'openrouter' ? 'OpenRouter API Key (sk-or-v1-...)' : 'Gemini API Key (AIzaSy...)'}
+                          </label>
+                          <div className="relative mt-1">
+                            <input 
+                              type={showPassword ? "text" : "password"} 
+                              placeholder={apiProvider === 'openrouter' ? 'sk-or-v1-...' : 'AIzaSy...'}
+                              value={getActiveApiKey()}
+                              onChange={(e) => {
+                                if (apiProvider === 'openrouter') {
+                                  setOpenRouterApiKey(e.target.value);
+                                } else {
+                                  setGeminiApiKey(e.target.value);
+                                }
+                              }}
+                              className="w-full text-xs font-mono bg-slate-50 border border-slate-300 rounded-xl p-3 pr-10 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                            />
+                            <button 
+                              type="button"
+                              onClick={() => setShowPassword(!showPassword)}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                            >
+                              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                            </button>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 pt-2">
+                            <button
+                              type="button"
+                              onClick={testApiKey}
+                              disabled={isTestingKey}
+                              className={`px-4 py-1.5 rounded-lg text-xs font-medium transition flex items-center space-x-1.5 ${
+                                isTestingKey 
+                                  ? 'bg-slate-200 text-slate-500 cursor-not-allowed' 
+                                  : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                              }`}
+                            >
+                              {isTestingKey ? (
+                                <RefreshCw className="w-3 h-3 animate-spin" />
+                              ) : (
+                                <Shield className="w-3 h-3" />
+                              )}
+                              <span>Test Key</span>
+                            </button>
+
+                            {apiProvider === 'openrouter' && (
+                              <a
+                                href="https://openrouter.ai/keys"
+                                target="_blank"
+                                rel="noreferrer"
+                                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition flex items-center space-x-1.5"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                                <span>Ambil Key</span>
+                              </a>
+                            )}
+
+                            {getActiveApiKey() && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (apiProvider === 'openrouter') {
+                                    setOpenRouterApiKey('');
+                                    localStorage.removeItem('openrouter_api_key');
+                                  } else {
+                                    setGeminiApiKey('');
+                                    localStorage.removeItem('gemini_api_key');
+                                  }
+                                  showToast('API Key dihapus', 'info');
+                                }}
+                                className="px-4 py-1.5 rounded-lg text-xs font-medium bg-red-50 text-red-600 hover:bg-red-100 transition"
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </div>
+
+                          {keyTestResult && (
+                            <div className={`mt-2 p-3 rounded-xl text-xs font-medium ${
+                              keyTestResult.success 
+                                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                                : 'bg-red-50 text-red-800 border border-red-200'
+                            }`}>
+                              {keyTestResult.message}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="pt-2 flex items-center space-x-3">
+                          <button 
+                            onClick={() => {
+                              saveApiConfig();
+                              if (!getActiveApiKey().trim()) {
+                                showToast(`Masukkan API Key ${apiProvider === 'gemini' ? 'Gemini' : 'OpenRouter'} Anda`, "error");
+                                return;
+                              }
+                              showToast(`Pengaturan API berhasil disimpan! (${getModelDisplayName()})`, "success");
+                            }}
+                            className="flex-1 py-2.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition shadow-md"
+                          >
+                            Simpan Pengaturan
+                          </button>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                          <p className="text-xs text-slate-600">
+                            <strong>Provider Aktif:</strong> {apiProvider === 'gemini' ? 'Google Gemini' : 'OpenRouter'}
+                            <br />
+                            <strong>Model:</strong> {getModelDisplayName()}
+                            <br />
+                            <strong>Status:</strong> {getActiveApiKey() ? '✅ Terhubung' : '❌ Belum ada API Key'}
+                          </p>
+                        </div>
+
+                        {apiProvider === 'openrouter' && (
+                          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-xs text-emerald-800">
+                            <p className="font-bold">💡 OpenRouter FREE Models:</p>
+                            <ul className="list-disc pl-4 mt-1 space-y-0.5 text-emerald-700">
+                              <li><strong>openrouter/free</strong> - Auto-select model terbaik yang tersedia</li>
+                              <li>Semua model dengan label <strong>FREE</strong> bisa digunakan tanpa biaya</li>
+                              <li>Banyak pilihan dari berbagai provider (Google, NVIDIA, Meta, dll)</li>
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
